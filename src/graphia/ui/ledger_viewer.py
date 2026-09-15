@@ -324,6 +324,219 @@ class DetailScreen(Screen):
         height: 1;
     }
 
+    /* ------------------------------------------------------------------
+       THE WINNING SIDE (spec 045, functional-spec §2.2) — ORDINARY ROWS.
+       Four rules, and between them they are the only place a row says who won:
+       no letter, marker or word names the winning side anywhere else on it.
+
+       THE TWO HUES ARE NOT THIS PANEL'S INVENTION. They are spec 038's two side
+       colours, verbatim — `$text-error` = Mafia, `$text-primary` = Law-abiding,
+       the same pair the `TranscriptScreen` rules below give a speaker's name and
+       the words they say. That identity IS the requirement, not a nicety:
+       functional-spec §2.2 asks that a game which reads red in the list open
+       into a transcript whose winning side's lines are red, so the reviewer
+       learns the pair once and carries it across the two views. Spec 038 did not
+       choose the pair freely either — only five theme variables clear 4.5:1 WCAG
+       AA on BOTH builtin themes, three are spent there on structure, and these
+       two are what was left. Changing either here silently breaks the crossing.
+       Verified by resolving both ends rather than by reading both rules: a
+       winning Mafia cell and `transcript--speech-mafia` come back as the same
+       hex (`#d17e92` dark, `#7a273c` light), and a winning Law-abiding cell and
+       `transcript--speech-law-abiding` likewise (`#57a5e2` / `#002d4f`).
+
+       COLOUR **AND** WEIGHT ON THE WINNER, which functional-spec §2.2 was
+       amended to require during technical design. Two marks rather than one, so
+       the statement survives a terminal, a screenshot or a colour-vision
+       deficiency that loses the hue — and so that the highlighted-row overrides,
+       where the cursor's own blue repaints the hues away, can degrade to weight
+       alone instead of to nothing.
+
+       THE LOSER IS DIMMED, not merely left alone: `$text-muted` is the same
+       muted grey `#transcript-panel-empty` below already spends on its "no
+       transcripts" note, so the panel dims on one variable throughout. The
+       separator carries `g-dim` too — it is nobody's cell — which keeps the pair
+       reading as one figure with one number lifted out of it rather than as two
+       competing numbers.
+
+       `.g-dim` AND `.g-law`/`.g-mafia` NEVER MEET ON ONE WIDGET — `_panel_row`
+       gives a cell its side class only when that side won — so these four rules
+       cannot race on specificity, and a row with no winner at all (no ending
+       recorded, a runaway, the retained draw) dims both cells by construction.
+
+       Measured on an ordinary row, per cell, by reading the resolved style back
+       through `Screen.get_style_at` and scoring foreground against that cell's
+       own background with the WCAG relative-luminance formula. AN ORDINARY ROW
+       HAS TWO BACKGROUNDS, not one, and both are recorded because the panel is
+       read in both states: `ListView:focus` adds `background-tint: $foreground
+       5%`, which lifts `$surface` from `#1e1e1e` to `#272727` on `textual-dark`
+       and drops it from `#d8d8d8` to `#cecece` on `textual-light`.
+
+                        panel focused        panel blurred
+         dark   Law      5.61:1               6.26:1
+         dark   Mafia    5.06:1               5.64:1
+         dark   loser    6.28:1               6.77:1
+         light  Law      8.97:1               9.90:1
+         light  Mafia    6.11:1               6.75:1
+         light  loser    4.97:1               5.15:1
+
+       Every one of the twelve clears 4.5:1, so AA holds in both focus states on
+       both builtin themes — the focused column is the tighter of the two and is
+       the one to check against if these rules are ever retuned.
+
+       The loser out-contrasting the winner is not a fault: `$text-muted` is
+       `auto 60%`, a BLEND toward the background's own contrast colour, so it
+       stays legible while still reading as secondary. The winner is
+       discriminated by hue and weight, not by being the brightest thing there.
+
+       WHY CLASSES AND NOT A BAKED STYLE, restated because it is what these rules
+       buy: nothing watches `ListView.index` and no row is regenerated on a
+       keypress — the cascade re-evaluates each cell for free when the row
+       becomes the highlighted one. And, unlike spec 038's `_kind_styles` recipe
+       (which resolves `get_component_rich_style` once at compose time and goes
+       stale), these cells also re-resolve when the THEME changes under an open
+       screen. Verified: switching `app.theme` with a `DetailScreen` mounted
+       repaints the winner from the dark `$text-primary` to the light one. */
+    #transcript-panel-list .g-pre {
+        color: $text;
+    }
+
+    #transcript-panel-list .g-dim {
+        color: $text-muted;
+    }
+
+    #transcript-panel-list .g-law {
+        color: $text-primary;
+        text-style: bold;
+    }
+
+    #transcript-panel-list .g-mafia {
+        color: $text-error;
+        text-style: bold;
+    }
+
+    /* ------------------------------------------------------------------
+       THE WINNING SIDE (spec 045, functional-spec §2.2) — THE HIGHLIGHTED ROW.
+
+       THE MARK ITSELF IS UNTOUCHED, deliberately. `ListView` repaints the row
+       the reviewer is sitting on in the cursor's own colours, and these rules
+       leave that repaint exactly as Textual ships it — no `$block-cursor-*`
+       variable is redefined and no background is overridden here. Six candidate
+       background overrides were measured during technical design; only `$panel`
+       cleared 4.5:1 on both builtin themes, and it sits so close to `$surface`
+       that the highlight stops being visible at all. So the blue stays, the two
+       side hues give way on this ONE row, and THE WINNER IS CARRIED BY WEIGHT
+       ALONE — which is the whole reason the ordinary-row rules above spend
+       `bold` on the winner as well as colour. Two marks on every other row, one
+       mark here, never none.
+
+       WHY THE HUES CANNOT SIMPLY BE LEFT TO STAND. The side colours are set on
+       the `Label`, and Textual's `.-highlight` rules are set on the `ListItem`
+       above it, so the Label's own colour SURVIVES the repaint and is then read
+       against the accent blue. Measured that way the pair stops being colours:
+       Mafia 1.53:1 on textual-dark focused and 1.03:1 on textual-light focused —
+       the second of those is a digit that is not there. Every segment therefore
+       takes `$block-cursor-foreground`, which is the foreground the mark was
+       designed around; it is `auto 87%`, so it re-resolves against whichever of
+       the two cursor backgrounds it actually lands on and tracks the theme for
+       free (measured white-ish on three states, near-black on textual-light
+       blurred, where the blurred mark is pale).
+
+       TRAP (i) — `.-highlight` BOLDS THE WHOLE ROW. Textual's focused rule sets
+       `text-style: $block-cursor-text-style`, which is `bold` on both builtin
+       themes, and `DOMNode.rich_style` ACCUMULATES `text-style` down the
+       ancestor chain (`style += styles.text_style`, root to leaf) — so the
+       ListItem's bold reaches every Label inside it. Without an explicit clear,
+       all four segments come back bold, weight discriminates nothing, and THE
+       ROW STILL LOOKS RIGHT, because the winner is bold too. That is how a
+       first pass shipped this broken. Verified by mutation: deleting the two
+       `text-style: not bold` declarations below takes the focused row from 1 of
+       4 segments bold to 4 of 4 on both themes (the blurred row is unaffected —
+       `$block-cursor-blurred-text-style` is `none` — so this is a
+       FOCUSED-STATE failure, and a check run only on the blurred row would miss
+       it entirely). The test that pins this must assert EXACTLY ONE bold
+       segment, never "the winner is bold".
+
+       TRAP (ii) — `$text-muted` IS `auto 60%`, A BLEND AND NOT A COLOUR. It
+       re-resolves against whatever background it lands on, so on the accent
+       blue it becomes a washed blue-white rather than a grey. Two independent
+       things are needed to keep it from winning, and both are applied below:
+
+         · AN EXPLICIT COLOUR ON THE DIMMED CELL. Verified by mutation: dropping
+           `color: $block-cursor-foreground` from the non-winner rules lets
+           `.g-dim` through and the losing count reads 2.57:1 / 5.42:1 / 4.58:1 /
+           4.22:1 across the four states — the first of those under AA's 3:1
+           floor, on the state a reviewer looks at most.
+         · THE `#transcript-panel-list` ID IN EVERY OVERRIDE SELECTOR. Textual
+           scores id-count FIRST, so an override written `ListItem.-highlight
+           .g-dim` (0 ids, 2 classes, 1 type) LOSES to the ordinary
+           `#transcript-panel-list .g-dim` (1 id, 1 class, 0 types) no matter how
+           many classes it carries. Verified by mutation: stripping just the id
+           out of the four selectors below, leaving every declaration as
+           written, restores the whole broken table — winner 1.53:1 / 4.12:1 /
+           1.03:1 / 4.09:1, loser 2.57:1. With the id the rules score (1, 2, 1)
+           and win cleanly.
+
+       BOTH SELECTOR FORMS ARE WRITTEN OUT — the plain one and the `:focus` one.
+       The mark differs between them (`$block-cursor-background`, solid primary,
+       when the panel has focus; `$block-cursor-blurred-background`, primary at
+       30% over the surface, when it does not) and functional-spec §2.2 asks for
+       the winner to be identifiable in BOTH, so both are stated rather than left
+       to one rule that happens to cover the pair.
+
+       `.g-dim` NEVER MEETS `.g-law`/`.g-mafia` ON ONE WIDGET — the invariant the
+       ordinary-row note above records — so the non-winner rule and the winner
+       rule below cannot both match the same segment, and neither depends on
+       source order to settle it.
+
+       Measured per cell through `Screen.get_style_at` on the COMPOSITED buffer
+       (the real stacked background, `ListView:focus`'s `background-tint`
+       included) and scored with the WCAG relative-luminance formula, with the
+       theme set BEFORE the screen composed:
+
+                          winner (bold)   every other segment
+         dark   focused    3.78:1          3.78:1
+         dark   blurred    9.59:1          9.59:1
+         light  focused    7.83:1          7.83:1
+         light  blurred    7.73:1          7.73:1
+
+       Every segment on the highlighted row now reads at the SAME ratio, which
+       is the point rather than an accident: nothing is dimmed away on the row
+       being read, all eight readings clear 3:1, and the winner is left as the
+       only thing on the row with weight. The dash row (`2d —`) and the
+       bare-number row keep exactly this treatment with nothing bold at all,
+       because neither carries a side class — no side won, so nothing is marked.
+
+       textual-ansi is NOT covered by these numbers: converting ANSI defaults to
+       truecolour for scoring reports black-on-black, which is the measurement
+       lying rather than a terminal behaviour. It is established instead by spec
+       038's categorical route, and the finding is recorded in spec 045's
+       `technical-considerations.md` §2.3. */
+    #transcript-panel-list > ListItem.-highlight .g-pre,
+    #transcript-panel-list > ListItem.-highlight .g-sep,
+    #transcript-panel-list > ListItem.-highlight .g-dim {
+        color: $block-cursor-foreground;
+        text-style: not bold;
+    }
+
+    #transcript-panel-list > ListItem.-highlight .g-law,
+    #transcript-panel-list > ListItem.-highlight .g-mafia {
+        color: $block-cursor-foreground;
+        text-style: bold;
+    }
+
+    #transcript-panel-list:focus > ListItem.-highlight .g-pre,
+    #transcript-panel-list:focus > ListItem.-highlight .g-sep,
+    #transcript-panel-list:focus > ListItem.-highlight .g-dim {
+        color: $block-cursor-foreground;
+        text-style: not bold;
+    }
+
+    #transcript-panel-list:focus > ListItem.-highlight .g-law,
+    #transcript-panel-list:focus > ListItem.-highlight .g-mafia {
+        color: $block-cursor-foreground;
+        text-style: bold;
+    }
+
     #transcript-panel-empty {
         height: 1fr;
         width: 1fr;

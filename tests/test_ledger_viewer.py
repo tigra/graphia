@@ -10554,3 +10554,719 @@ async def test_a_game_with_no_recorded_ending_shows_a_dash_not_a_pair(
         assert not any(char.isdigit() for part in standings for char in part), (
             "a game with no recorded ending must show no survivor number at all"
         )
+
+
+# ---------------------------------------------------------------------------
+# B16.5 - B16.9 The winning side stands out (spec 045, Slice 2) — and how a
+#         cell's colour and weight are read back.
+#
+#         WHAT IS MEASURED, AND WHY IT IS THE COMPOSITED CELL. A segment's own
+#         `Label.styles.color` is what the cascade *declared*; it is not what
+#         the reviewer sees. Both theme variables in play are `auto NN%` — a
+#         BLEND against whatever background the glyph actually lands on, not a
+#         colour (`$text-muted` is `auto 60%`, `$block-cursor-foreground` is
+#         `auto 87%`) — and the row's background is itself two things, because
+#         `ListView:focus` adds a `background-tint` that lifts `$surface` on
+#         textual-dark and drops it on textual-light. So every reading below
+#         comes from `Screen.get_style_at`: the style of the COMPOSITED buffer
+#         at that cell, real stacked background and already-blended foreground.
+#         That is the only reading a contrast ratio can honestly come from.
+#
+#         THE THEME IS SET BEFORE `run_test()` COMPOSES ANYTHING — see
+#         :func:`_viewer_in_theme`, which exists to make that ordering hard to
+#         get wrong. Setting it afterwards measures the previous theme's
+#         palette; that is the mistake that produced a false 1.69:1 reading
+#         during this spec's technical design.
+#
+#         THE OUTCOME IS ASSERTED, NEVER THE SELECTOR. Not one assertion below
+#         names a CSS rule, a theme variable or a colour literal: they are all
+#         relations between cells read off the screen — this one is bold and
+#         those three are not, this one's colour differs from that one's, every
+#         one of them clears a contrast floor. The rules can be retuned, the
+#         variables swapped and the specificity rewritten, and these tests go
+#         on meaning exactly what they mean now.
+#
+#         TWO OF THEM ARE WITNESSES FOR TRAPS THAT SHIP LOOKING CORRECT, and
+#         both were verified by mutation — the rule broken, the test watched
+#         going red, the rule restored:
+#
+#         * B16.6 pins EXACTLY ONE bold segment on the marked row, never "the
+#           winner is bold". Textual's `.-highlight` sets `text-style` on the
+#           `ListItem`, and `DOMNode.rich_style` accumulates it down to every
+#           `Label` inside, so without an explicit clear all four segments come
+#           back bold — and the row still looks right, because the winner is
+#           bold too. Verified: deleting the clears takes the FOCUSED row from
+#           1 of 4 bold to 4 of 4, on both themes, while the blurred row is
+#           untouched (`$block-cursor-blurred-text-style` is `none`). A check
+#           run only on the blurred row would pass while the feature is broken,
+#           which is why B16.6 asserts both states.
+#         * B16.7 pins every segment of the marked row at 3:1. `$text-muted`'s
+#           blend re-resolves on the cursor's blue and can out-score the
+#           override on specificity; verified by mutation, the losing count
+#           reads 2.57:1 on textual-dark focused when it does.
+#
+#         `textual-ansi` IS NOT SWEPT HERE, deliberately: converting ANSI
+#         defaults to truecolour for scoring reports black-on-black, which is
+#         the measurement lying rather than a terminal behaviour. That theme is
+#         established instead by spec 038's categorical route, and the finding
+#         is recorded in spec 045's `technical-considerations.md` §2.3.
+# ---------------------------------------------------------------------------
+
+# The two builtin themes whose palettes are concrete colours, so a contrast
+# ratio computed from them is a fact about this stylesheet. `textual-ansi` is
+# deliberately absent — see the banner above.
+_TRUECOLOUR_THEMES = ["textual-dark", "textual-light"]
+
+# WCAG AA for normal-size text — the floor every cell of an ORDINARY row
+# clears. Measured tightest: 5.06:1, a winning Mafia count on textual-dark with
+# the panel focused. Real headroom, without being slack.
+_AA_NORMAL_TEXT = 4.5
+
+# The floor on the MARKED row, where Textual's own cursor background is kept
+# exactly as it ships (tech-spec §2.3 measured six candidate overrides; only
+# one cleared AA and it made the mark invisible). 3:1 is WCAG AA's floor for
+# large text and UI components, and it is the number tech-spec §2.3's risk
+# table commits the losing count to. Measured tightest: 3.78:1, textual-dark
+# with the panel focused.
+_LEGIBLE_ON_THE_MARK = 3.0
+
+
+def _viewer_in_theme(ledger: Path, theme: str) -> LedgerViewerApp:
+    """The viewer with its theme already set — **before** anything composes.
+
+    The ordering is load-bearing rather than tidy. A screen that composed under
+    one palette has already been painted; reading its cells back afterwards
+    measures the palette it composed under, not the one just assigned. That is
+    not hypothetical — it is the mistake that produced a false 1.69:1 reading
+    for the Law-abiding hue during this spec's technical design, when the true
+    light-theme value is a dark blue reading 8.97:1.
+
+    (The CSS-classed segments this section measures do in fact re-resolve on a
+    live theme change — one of the reasons tech-spec §2.3 prefers them to spec
+    038's baked spans. Composing under the theme is still what a reviewer
+    actually gets, so it is what these tests measure.)
+
+    The assignment doubles as the guard for a theme that stopped existing:
+    ``App.theme`` is a validated reactive and raises ``InvalidThemeError`` on a
+    name Textual has not registered, so a renamed built-in fails loudly here
+    instead of silently sampling the default palette twice.
+    """
+    app = LedgerViewerApp(path=ledger)
+    app.theme = theme
+    return app
+
+
+def _relative_luminance(colour: tuple[int, int, int]) -> float:
+    """WCAG relative luminance of an 8-bit RGB triplet."""
+
+    def channel(value: int) -> float:
+        srgb = value / 255
+        return srgb / 12.92 if srgb <= 0.04045 else ((srgb + 0.055) / 1.055) ** 2.4
+
+    red, green, blue = colour
+    return 0.2126 * channel(red) + 0.7152 * channel(green) + 0.0722 * channel(blue)
+
+
+def _contrast_ratio(
+    foreground: tuple[int, int, int], background: tuple[int, int, int]
+) -> float:
+    """The WCAG contrast ratio between two RGB triplets — 1.0 to 21.0.
+
+    The formula every contrast number in spec 045's technical considerations
+    was produced with, written out here rather than imported: it is four lines,
+    it has no dependency, and having it at the assertion site is what lets a
+    failure read as "this cell fell to 2.57:1" rather than as an opaque boolean.
+    """
+    lighter, darker = sorted(
+        (_relative_luminance(foreground), _relative_luminance(background)),
+        reverse=True,
+    )
+    return (lighter + 0.05) / (darker + 0.05)
+
+
+def _hex(colour) -> str:
+    """A Rich colour as ``#rrggbb`` — the form a failed equality reads in."""
+    triplet = colour.get_truecolor()
+    return f"#{triplet.red:02x}{triplet.green:02x}{triplet.blue:02x}"
+
+
+class _CellReading(NamedTuple):
+    """One row segment as it really reaches the terminal.
+
+    ``colour`` and ``background`` are ``#rrggbb`` strings rather than colour
+    objects, so a failed equality prints two hexes a human can compare.
+    """
+
+    text: str
+    colour: str
+    background: str
+    bold: bool
+    contrast: float
+
+
+def _read_cell(screen: DetailScreen, label: Label) -> _CellReading:
+    """Read one segment's COMPOSITED style back off the screen buffer.
+
+    ``Screen.get_style_at``, and not ``label.styles`` or ``label.rich_style``:
+    it returns the cell as composited — the real stacked background
+    (``ListView:focus``'s ``background-tint`` included) with the foreground
+    already blended against it. Both variables in play here are blends rather
+    than colours, so a declared value would be the wrong thing to score.
+    """
+    style = screen.get_style_at(label.region.x, label.region.y)
+    assert style.color is not None and style.bgcolor is not None, (
+        "the composited cell carried no colour at all, so nothing measured "
+        "from it below means anything"
+    )
+    # The non-vacuity guard for the sweep itself: on a truecolour theme every
+    # one of these resolves to a concrete hue. A default ("the terminal
+    # decides") colour converts to black for scoring, which would report
+    # black-on-black and make every ratio below a fiction — exactly why
+    # `textual-ansi` is out of this section's scope.
+    assert not style.color.is_default and not style.bgcolor.is_default, (
+        "a cell resolved to the terminal default rather than to a concrete "
+        "colour, so its measured contrast is not a fact about this stylesheet"
+    )
+    foreground = style.color.get_truecolor()
+    background = style.bgcolor.get_truecolor()
+    return _CellReading(
+        text=_segment_text(label),
+        colour=_hex(style.color),
+        background=_hex(style.bgcolor),
+        bold=bool(style.bold),
+        contrast=_contrast_ratio(
+            (foreground.red, foreground.green, foreground.blue),
+            (background.red, background.green, background.blue),
+        ),
+    )
+
+
+def _read_row(screen: DetailScreen, index: int) -> list[_CellReading]:
+    """Every segment of panel row ``index``, in column order."""
+    listing = screen.query_one("#transcript-panel-list", ListView)
+    item = listing.query(ListItem).nodes[index]
+    return [_read_cell(screen, label) for label in item.query(Label)]
+
+
+def _is_marked(screen: DetailScreen, index: int) -> bool:
+    """Whether the list is painting its cursor on row ``index``."""
+    listing = screen.query_one("#transcript-panel-list", ListView)
+    return listing.query(ListItem).nodes[index].has_class("-highlight")
+
+
+def _bold_cells(cells: list[_CellReading]) -> list[str]:
+    """The text of every segment that came back bold — what a failure prints."""
+    return [cell.text for cell in cells if cell.bold]
+
+
+def _marking_ledger(tmp_path: Path, *, name: str) -> Path:
+    """One run, three games: a row to be marked, a Mafia win, a Law-abiding win.
+
+    Row 0 is the row the list marks the moment the screen opens, so the two
+    rows an ORDINARY-row claim can be made about are 1 and 2 — row 0 is never
+    ordinary and is here to absorb the mark.
+
+    The two winners sit on rows whose counts are DIFFERENT NUMBERS (``1-3`` and
+    ``4-0``), so "the winning side's cell" is identifiable by the digit it
+    carries and not only by the column it sits in. The parity case, where that
+    is exactly not true, is B16.8's whole subject.
+    """
+    return _row_ledger(
+        tmp_path,
+        {
+            "game-01.txt": _game_with_outcome(
+                1, days=3, law_alive=2, mafia_alive=2, law_killed=2
+            ),
+            "game-02.txt": _game_with_outcome(
+                2, days=3, law_alive=1, mafia_alive=3, law_killed=2
+            ),
+            "game-03.txt": _game_with_outcome(
+                3, days=2, law_alive=4, mafia_alive=0, law_killed=1, mafia_executed=2
+            ),
+        },
+        name=name,
+    )
+
+
+# What that run reads as. Asserted by B16.5 for a reason beyond fixture sanity:
+# functional-spec §2.2's fifth criterion is that the winner is named nowhere on
+# the row in words or letters, and the marking having added no glyph at all is
+# what makes that true.
+_MARKING_ROWS = ["01   3d  2-2", "02   3d  1-3", "03   2d  4-0"]
+
+
+# ---------------------------------------------------------------------------
+# B16.5 On an ordinary row, the winner is coloured and the loser is dimmed
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize("theme", _TRUECOLOUR_THEMES)
+async def test_an_ordinary_row_colours_the_winner_and_dims_the_loser(
+    tmp_path: Path, theme: str
+) -> None:
+    """Functional-spec §2.2's first, second and sixth criteria, both winners.
+
+    One mount per theme, two ordinary rows in it — a game the Mafia won
+    (``1-3``) and a game the Law-abiding Citizens won (``4-0``) — because §2.2
+    states the requirement once per side and a rule that coloured only one of
+    them would satisfy either criterion alone.
+
+    Read in BOTH focus states within the one mount, which is not padding: the
+    panel's own background differs between them (``ListView:focus`` adds a
+    ``background-tint``), so "clears 4.5:1" is two different measurements and
+    the focused one is the tighter.
+
+    Five claims, and none of them names a rule:
+
+    * **the winner's cell is not the loser's colour** — the statement §2.2
+      asks for, as a relation rather than as a hex;
+    * **the loser's cell is the separator's colour** — which is what "dimmed"
+      concretely means here: the losing count reads as part of the figure, like
+      the hyphen between the pair, rather than as a second number competing
+      with the first;
+    * **…and dimmer than the row's own plain text**, so "dimmed" is not
+      satisfied by any colour that merely differs;
+    * **the winner is bold and nothing else on the row is** — the second of the
+      two marks §2.2 was amended to require, so the statement survives a
+      terminal or a screenshot that loses the hue;
+    * **every cell clears WCAG AA**, both themes, both focus states.
+
+    Plus the two non-vacuity guards the claims need: the two sides' colours
+    differ from each other (otherwise "coloured by side" says nothing), and the
+    rows' TEXT is unchanged from what Slice 1 left — the marking added no
+    letter, marker or word, which is §2.2's fifth criterion.
+    """
+    ledger = _marking_ledger(tmp_path, name=f"row-marking-{theme}.yaml")
+
+    async with _viewer_in_theme(ledger, theme).run_test(
+        size=_PANEL_TERMINAL_SIZE
+    ) as pilot:
+        await pilot.pause()
+        assert pilot.app.theme == theme
+        screen = await _open_detail_for_first_row(pilot)
+        listing = screen.query_one("#transcript-panel-list", ListView)
+
+        # §2.2's fifth criterion: the marking is the ONLY place the row states
+        # the winner — it added no glyph, so the rows read exactly what Slice 1
+        # left them reading.
+        assert _panel_labels(screen) == _MARKING_ROWS
+
+        for focused in (False, True):
+            if focused:
+                await pilot.press("t")
+                await pilot.pause()
+            assert listing.has_focus is focused
+            where = f"{theme}, panel {'focused' if focused else 'blurred'}"
+
+            # The two rows under test are the ones the cursor is NOT on.
+            assert not _is_marked(screen, 1) and not _is_marked(screen, 2), (
+                "rows 1 and 2 must be ordinary rows for this test to be about "
+                "ordinary rows at all"
+            )
+
+            # Mafia win: the winning count is the SECOND of the pair.
+            pre, law_lost, sep, mafia_won = _read_row(screen, 1)
+            assert (law_lost.text, mafia_won.text) == ("1", "3")
+            # Law-abiding win: the winning count is the FIRST of the pair.
+            law_pre, law_won, law_sep, mafia_lost = _read_row(screen, 2)
+            assert (law_won.text, mafia_lost.text) == ("4", "0")
+
+            for winner, loser, separator, prefix in (
+                (mafia_won, law_lost, sep, pre),
+                (law_won, mafia_lost, law_sep, law_pre),
+            ):
+                assert winner.colour != loser.colour, (
+                    f"{where}: both survivor counts came back {winner.colour}, "
+                    "so nothing on the row says which side won"
+                )
+                assert loser.colour == separator.colour, (
+                    f"{where}: the losing count ({loser.colour}) is not dimmed "
+                    f"to the same grey as the separator ({separator.colour}), "
+                    "so it reads as a number in its own right rather than as "
+                    "part of one figure"
+                )
+                assert loser.contrast < prefix.contrast, (
+                    f"{where}: the losing count reads at {loser.contrast:.2f}:1 "
+                    f"against the row's own plain text at "
+                    f"{prefix.contrast:.2f}:1 — it is not DIMMED, merely a "
+                    "different colour"
+                )
+                assert winner.bold, (
+                    f"{where}: the winning count is not bold, so the mark does "
+                    "not survive a terminal or a screenshot that loses colour"
+                )
+                assert _bold_cells([prefix, loser, separator]) == [], (
+                    f"{where}: something other than the winning count came "
+                    "back bold, so weight no longer picks the winner out"
+                )
+                for cell in (prefix, winner, loser, separator):
+                    assert cell.contrast >= _AA_NORMAL_TEXT, (
+                        f"{where}: {cell.text!r} reads at "
+                        f"{cell.contrast:.2f}:1 on {cell.background}, under "
+                        f"WCAG AA's {_AA_NORMAL_TEXT}:1 for normal text"
+                    )
+
+            # ...and the two sides really are two colours, or "the winning
+            # side's colour" would hold on a stylesheet that painted both the
+            # same.
+            assert mafia_won.colour != law_won.colour, (
+                f"{where}: both sides won in {mafia_won.colour}, so a row's "
+                "colour cannot tell a reviewer WHICH side won"
+            )
+
+
+# ---------------------------------------------------------------------------
+# B16.6 Exactly one count is bold on the row the reviewer is on — trap (i)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize("theme", _TRUECOLOUR_THEMES)
+async def test_exactly_one_count_is_bold_on_the_row_the_reviewer_is_on(
+    tmp_path: Path, theme: str
+) -> None:
+    """Functional-spec §2.2's seventh criterion — and trap (i)'s witness.
+
+    On the row the cursor is on, the list repaints everything in its own
+    colours and the two side hues give way, so WEIGHT is the only thing left
+    saying who won. The assertion is therefore **exactly one bold segment**,
+    never "the winner is bold": Textual's `.-highlight` rule sets `text-style`
+    on the `ListItem` and `DOMNode.rich_style` accumulates it down to every
+    `Label` inside, so a stylesheet missing the explicit clears bolds all four
+    segments — and the row still looks right, because the winner is bold too.
+    That is how a first pass shipped this broken, and "the winner is bold"
+    would have passed against it.
+
+    BOTH FOCUS STATES, and that is the half that makes this a witness rather
+    than a formality. `$block-cursor-blurred-text-style` is `none`, so the
+    blurred row inherits nothing and stays at one bold segment whatever the
+    stylesheet does about clearing. Verified by mutation: deleting the clears
+    takes the FOCUSED row from 1 of 4 bold to 4 of 4 on both themes and leaves
+    the blurred row untouched — so a check run only on the blurred row would
+    have passed while the feature was broken.
+
+    The bold segment is identified by the DIGIT it carries, not by its column:
+    the marked game is a Mafia win at ``1-3``, so the mark is on the ``3``, and
+    a rule that bolded the Law-abiding cell instead would be caught rather than
+    counted.
+
+    The cursor is then MOVED with `down` — the reviewer's own action, which is
+    how §2.2's seventh criterion is worded — onto a game the other side won, so
+    the claim is made about both sides' cells and about a row that became
+    marked rather than one that started that way. The row the cursor left is
+    re-read in the same breath: it is ordinary again, and still carries exactly
+    one bold count.
+    """
+    ledger = _row_ledger(
+        tmp_path,
+        {
+            "game-01.txt": _game_with_outcome(
+                1, days=3, law_alive=1, mafia_alive=3, law_killed=2
+            ),
+            "game-02.txt": _game_with_outcome(
+                2, days=2, law_alive=4, mafia_alive=0, law_killed=1, mafia_executed=2
+            ),
+        },
+        name=f"row-weight-{theme}.yaml",
+    )
+
+    async with _viewer_in_theme(ledger, theme).run_test(
+        size=_PANEL_TERMINAL_SIZE
+    ) as pilot:
+        await pilot.pause()
+        assert pilot.app.theme == theme
+        screen = await _open_detail_for_first_row(pilot)
+        listing = screen.query_one("#transcript-panel-list", ListView)
+        assert _panel_labels(screen) == ["01   3d  1-3", "02   2d  4-0"]
+
+        # The row the list marks on arrival, with the panel still blurred.
+        assert _is_marked(screen, 0) and not listing.has_focus
+        assert _bold_cells(_read_row(screen, 0)) == ["3"], (
+            f"{theme}, panel blurred: the marked row must carry exactly one "
+            "bold segment — the winning side's count"
+        )
+
+        # ...and with the panel FOCUSED, which is the state Textual's own
+        # `.-highlight` rule bolds the whole row in. THIS is trap (i)'s
+        # witness: without the explicit clears every segment comes back bold
+        # here, and only here.
+        await pilot.press("t")
+        await pilot.pause()
+        assert listing.has_focus and _is_marked(screen, 0)
+        assert _bold_cells(_read_row(screen, 0)) == ["3"], (
+            f"{theme}, panel FOCUSED: more than the winning count is bold on "
+            "the marked row, so weight discriminates nothing — and the row "
+            "still looks right, because the winner is bold too. This is trap "
+            "(i): Textual's `.-highlight` sets `text-style` on the ListItem "
+            "and it accumulates down to every Label inside"
+        )
+
+        # The reviewer moves down a row, onto a game the OTHER side won.
+        await pilot.press("down")
+        await pilot.pause()
+        assert listing.index == 1 and _is_marked(screen, 1)
+        assert _bold_cells(_read_row(screen, 1)) == ["4"], (
+            f"{theme}, panel FOCUSED: the row the cursor moved onto does not "
+            "carry exactly one bold count — the winning Law-abiding one"
+        )
+
+        # ...and the row it left is ordinary again, still marked by weight.
+        assert not _is_marked(screen, 0)
+        assert _bold_cells(_read_row(screen, 0)) == ["3"], (
+            f"{theme}: moving the cursor off a row cost it its weight mark"
+        )
+
+
+# ---------------------------------------------------------------------------
+# B16.7 Both counts stay legible on the row the reviewer is on — trap (ii)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize("theme", _TRUECOLOUR_THEMES)
+async def test_both_counts_stay_legible_on_the_row_the_reviewer_is_on(
+    tmp_path: Path, theme: str
+) -> None:
+    """Functional-spec §2.2's eighth criterion — and trap (ii)'s witness.
+
+    The mark is Textual's own accent blue, kept exactly as it ships, and the
+    dimmed cell's colour is a BLEND rather than a colour (`auto 60%`), so it
+    re-resolves against that blue into a washed blue-white — and it can beat
+    the highlight override on selector specificity while doing it. Verified by
+    mutation, twice: dropping the explicit colour from the non-winner rules
+    drops the losing count to 2.57:1 on textual-dark focused, and stripping the
+    panel's id out of the override selectors (leaving every declaration exactly
+    as written) restores the whole broken table, with the WINNER at 1.03:1 on
+    textual-light focused — a digit that is not there.
+
+    So the assertion is over EVERY segment of the marked row, not only the
+    dimmed one: both failures are reached from different directions and the
+    second lands on the winner. 3:1 is the floor tech-spec §2.3's risk table
+    commits to; the measured tightest reading is 3.78:1.
+
+    Both focus states, because the two marks are different colours
+    (`$block-cursor-background` when the panel has focus,
+    `$block-cursor-blurred-background` when it does not) and §2.2 asks for the
+    counts to stay readable in both.
+
+    The mark is proved to be PAINTED rather than assumed: the marked row's
+    background must differ from an ordinary row's. Without that guard a
+    regression that stopped highlighting altogether would sail through — every
+    cell would be ordinary text on the ordinary surface, and would clear 3:1
+    comfortably.
+
+    The parity row is the one the cursor starts on deliberately: ``2-2`` is
+    where colour has least to work with, so it is the hardest row to keep both
+    counts legible on.
+    """
+    ledger = _row_ledger(
+        tmp_path,
+        {
+            "game-01.txt": _game_with_outcome(
+                1, days=3, law_alive=2, mafia_alive=2, law_killed=2
+            ),
+            "game-02.txt": _game_with_outcome(
+                2, days=2, law_alive=4, mafia_alive=0, law_killed=1, mafia_executed=2
+            ),
+        },
+        name=f"row-legible-{theme}.yaml",
+    )
+
+    async with _viewer_in_theme(ledger, theme).run_test(
+        size=_PANEL_TERMINAL_SIZE
+    ) as pilot:
+        await pilot.pause()
+        assert pilot.app.theme == theme
+        screen = await _open_detail_for_first_row(pilot)
+        listing = screen.query_one("#transcript-panel-list", ListView)
+
+        def check(row: int, where: str) -> None:
+            assert _is_marked(screen, row), f"{where}: row {row} is not marked"
+            marked = _read_row(screen, row)
+            ordinary = _read_row(screen, 1 - row)
+            assert marked[0].background != ordinary[0].background, (
+                f"{where}: the marked row's background ({marked[0].background}) "
+                f"is the ordinary row's ({ordinary[0].background}) — the cursor "
+                "is not being painted at all, so the readings below are not "
+                "measuring legibility against a mark"
+            )
+            for cell in marked:
+                assert cell.contrast >= _LEGIBLE_ON_THE_MARK, (
+                    f"{where}: {cell.text!r} reads at {cell.contrast:.2f}:1 "
+                    f"({cell.colour} on {cell.background}), under the "
+                    f"{_LEGIBLE_ON_THE_MARK}:1 floor — something on the row "
+                    "the reviewer is sitting on has been dimmed away"
+                )
+
+        # The blurred mark first, then the focused one, then the focused mark
+        # on a row the cursor was moved onto (and whose winner is the other
+        # side).
+        assert not listing.has_focus
+        check(0, f"{theme}, panel blurred")
+
+        await pilot.press("t")
+        await pilot.pause()
+        assert listing.has_focus
+        check(0, f"{theme}, panel FOCUSED")
+
+        await pilot.press("down")
+        await pilot.pause()
+        assert listing.index == 1
+        check(1, f"{theme}, panel FOCUSED, cursor moved down")
+
+
+# ---------------------------------------------------------------------------
+# B16.8 The parity row — where both counts are the same number
+# ---------------------------------------------------------------------------
+
+
+async def test_a_two_all_row_still_says_which_side_won(tmp_path: Path) -> None:
+    """Functional-spec §2.2's third criterion — the case the whole spec is for.
+
+    Most of the preserved corpus ends at two Law-abiding Citizens against two
+    Mafiosos — the parity the Mafia win on — so this is not an edge case, it is
+    the commonest row there is: ``2-2``, where the two digits say nothing at
+    all by themselves and the marking is the whole of the statement. (Said as
+    a proportion rather than as a count, per this spec's standing rule: no new
+    corpus-count literal goes into code or tests, because the ones already in
+    the repo have rotted.)
+
+    Two rows of it in one mount — one ordinary, one under the cursor —
+    **because the two rows say it differently**, and asserting only one would
+    miss the degradation §2.2 is careful about. On the ordinary row, exactly
+    one of the two 2s is coloured (and it is bold). On the marked row the
+    colours are gone — both 2s come back the same colour, which is the mark's
+    own foreground — and exactly one is bold. Two marks, then one, never none.
+
+    ONE THEME, deliberately, and this is the one test in the group that does
+    not sweep: every claim here is about WHICH cell is marked, not about what
+    the mark looks like, and B16.5 and B16.6 already carry the palette sweep
+    for the colour and the weight respectively. A second mount would buy a
+    second reading of a structural fact.
+    """
+    ledger = _row_ledger(
+        tmp_path,
+        {
+            "game-01.txt": _game_with_outcome(
+                1, days=3, law_alive=2, mafia_alive=2, law_killed=2
+            ),
+            "game-02.txt": _game_with_outcome(
+                2, days=3, law_alive=2, mafia_alive=2, law_killed=2
+            ),
+        },
+        name="row-parity.yaml",
+    )
+
+    async with _viewer_in_theme(ledger, "textual-dark").run_test(
+        size=_PANEL_TERMINAL_SIZE
+    ) as pilot:
+        await pilot.pause()
+        screen = await _open_detail_for_first_row(pilot)
+        listing = screen.query_one("#transcript-panel-list", ListView)
+        assert _panel_labels(screen) == ["01   3d  2-2", "02   3d  2-2"]
+
+        await pilot.press("t")
+        await pilot.pause()
+        assert listing.has_focus
+
+        # The ordinary row: two identical digits, and only one of them coloured.
+        assert not _is_marked(screen, 1)
+        _, law, _, mafia = _read_row(screen, 1)
+        assert law.text == mafia.text == "2", "this is not the parity case"
+        assert law.colour != mafia.colour, (
+            "both 2s came back the same colour on an ordinary row, so a "
+            "reviewer looking at the commonest shape in the whole corpus "
+            "cannot tell who won"
+        )
+        assert _bold_cells(_read_row(screen, 1)) == ["2"], (
+            "exactly one of the two 2s must be bold on an ordinary row"
+        )
+        assert mafia.bold and not law.bold, (
+            "the Mafia won this game, so it is the SECOND 2 that must be "
+            "marked — a marking on the wrong cell is worse than none"
+        )
+
+        # The marked row: the colours give way, and weight carries it alone.
+        assert _is_marked(screen, 0)
+        _, law_marked, _, mafia_marked = _read_row(screen, 0)
+        assert law_marked.text == mafia_marked.text == "2"
+        assert law_marked.colour == mafia_marked.colour, (
+            "the marked row kept the two side hues, which measured 1.53:1 and "
+            "1.03:1 against the cursor's own background during technical "
+            "design — the row must repaint in the mark's own foreground"
+        )
+        assert _bold_cells(_read_row(screen, 0)) == ["2"], (
+            "the row the reviewer is sitting on has lost its colours to the "
+            "mark, so weight is the only statement left — and exactly one of "
+            "the two 2s must carry it"
+        )
+        assert mafia_marked.bold and not law_marked.bold, (
+            "the surviving mark is on the wrong 2: the Mafia won this game"
+        )
+
+
+# ---------------------------------------------------------------------------
+# B16.9 The list and the reading view speak the same two colours
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize("theme", _TRUECOLOUR_THEMES)
+async def test_the_list_and_the_reading_view_speak_the_same_two_colours(
+    tmp_path: Path, theme: str
+) -> None:
+    """Functional-spec §2.2's fourth criterion — the crossing between two views.
+
+    "A game that reads red in the list opens into a transcript whose winning
+    side's lines are red." That is the criterion most likely to rot silently:
+    the two ends live in two different stylesheets on two different screens,
+    nothing forces them to move together, and retuning either one leaves a
+    perfectly green suite and a reviewer who has to learn the colours twice.
+
+    So the test crosses the seam the reviewer does — it reads the winning cell
+    off an ordinary row, then opens a game by the real key route and resolves
+    the reading view's own speech style for the same side — and compares the
+    two RESOLVED colours rather than the two rules. Rules can be written
+    differently and mean the same thing; a reviewer only ever sees what they
+    resolve to.
+
+    Both sides, both themes, and the non-vacuity guard both halves need: the
+    two sides' colours must differ from each other, or "the same colour at both
+    ends" would hold on a stylesheet that painted everything one hue.
+    """
+    ledger = _marking_ledger(tmp_path, name=f"row-crossing-{theme}.yaml")
+
+    async with _viewer_in_theme(ledger, theme).run_test(
+        size=_PANEL_TERMINAL_SIZE
+    ) as pilot:
+        await pilot.pause()
+        assert pilot.app.theme == theme
+        screen = await _open_detail_for_first_row(pilot)
+        assert _panel_labels(screen) == _MARKING_ROWS
+
+        # The two winning cells, off the two ordinary rows.
+        in_the_list = {
+            KIND_SPEECH_MAFIA: _read_row(screen, 1)[3].colour,
+            KIND_SPEECH_LAW_ABIDING: _read_row(screen, 2)[1].colour,
+        }
+        assert in_the_list[KIND_SPEECH_MAFIA] != in_the_list[KIND_SPEECH_LAW_ABIDING]
+
+        # ...and now the reviewer opens a game, by the key route they use.
+        await _highlight_game(pilot, 0)
+        await pilot.press("enter")
+        await pilot.pause()
+        assert isinstance(pilot.app.screen, TranscriptScreen)
+        in_the_game = pilot.app.screen._kind_styles()
+
+        for kind, side in (
+            (KIND_SPEECH_MAFIA, "Mafia"),
+            (KIND_SPEECH_LAW_ABIDING, "Law-abiding"),
+        ):
+            spoken = in_the_game[kind].color
+            assert spoken is not None, (
+                f"{theme}: the reading view resolved no colour for {side} "
+                "speech, so the equality below is vacuous"
+            )
+            assert _hex(spoken) == in_the_list[kind], (
+                f"{theme}: a {side} win is marked {in_the_list[kind]} in the "
+                f"list but that side speaks in {_hex(spoken)} inside the game "
+                "— the reviewer has to learn the pair twice, and "
+                "functional-spec §2.2's crossing is broken"
+            )
