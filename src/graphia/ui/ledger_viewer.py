@@ -184,9 +184,11 @@ class DetailScreen(Screen):
     together. ``Header``/``Footer`` stay *outside* the split, so the framing
     above is unchanged. The panel's width is a fixed column count rather than
     ``auto`` precisely so the details pane keeps the same width whether a run has
-    transcripts or not; a run with none keeps the panel in place and shows the
-    plain :data:`_NO_TRANSCRIPTS_MESSAGE` with its list hidden — the same
-    hide-list/show-message posture the removed spec-017 list screen used.
+    transcripts or not; a run with none keeps the panel in place — titled, since
+    it is still the Games strip — and shows the plain
+    :data:`_NO_TRANSCRIPTS_MESSAGE` with its list *and its column header* hidden
+    (functional-spec §2.6), the same hide-list/show-message posture the removed
+    spec-017 list screen used.
 
     **The two panes are one keypress apart** (spec 037): ``right`` focuses the
     panel's list, ``left`` focuses the record scroller, and each focuses one
@@ -307,6 +309,47 @@ class DetailScreen(Screen):
         width: 22;
         height: 1fr;
         border: round $panel;
+    }
+
+    /* THE COLUMN HEADER (spec 045, functional-spec §2.3) — one line naming the
+       three columns, above the rows and outside the list.
+
+       A SIBLING OF THE `ListView`, NOT A ROW IN IT, and that is structural
+       rather than stylistic. `ListView.watch_index` and
+       `ListView.highlighted_child` both `assert isinstance(..., ListItem)`, and
+       `ListView.Selected.index` is a position in `_nodes` — so a non-`ListItem`
+       child would shift every selection index by one and break
+       `DetailScreen`'s index-parallel `_entries` contract (a reviewer would open
+       the game *above* the row they picked). Textual 8.2.4 offers no sticky-row
+       or table-header affordance on `ListView` either. As a sibling the list
+       scrolls independently *beneath* the header, so §2.3's "it sits at the top
+       of the list and stays there" holds BY CONSTRUCTION — nothing watches the
+       scroll offset and there is no header row to lose a game behind.
+
+       `height: 1` — one line, stated rather than left to `Static`'s `height:
+       auto`, so the line the header spends comes out of the LIST (which is
+       `height: 1fr` and absorbs whatever the header leaves) and never out of the
+       panel. The panel's own `width: 22` is untouched, which is what keeps the
+       details pane beside it at its measured 78.
+
+       `color: $text-muted` — the same muted grey `#transcript-panel-empty`
+       spends on its "no transcripts" note and `.g-dim` spends on a losing
+       count. A column label is scaffolding, not data: it must not compete with
+       the numbers under it, and it must never be mistaken for a winner's mark.
+
+       ALIGNMENT IS CARRIED BY THE HEADER STRING, not by this rule. Both the
+       header and each row's segments start at the list's own left edge (neither
+       `ListView` nor `ListItem` adds padding on the installed Textual), so
+       :data:`_PANEL_HEADER` lines its three labels up with the row grid by
+       character position alone — see that constant for the grid. A vertical
+       scrollbar (any run over ~20 games) takes its columns from the RIGHT, so
+       the left-anchored grid is unaffected; measured with 50 games, the header's
+       `#`/`day`/`L-M` sit at the same x as the row's number/day/counts with the
+       scrollbar present and absent alike. */
+    #transcript-panel-header {
+        height: 1;
+        width: 1fr;
+        color: $text-muted;
     }
 
     #transcript-panel-list {
@@ -633,6 +676,12 @@ class DetailScreen(Screen):
             with VerticalScroll(id="detail-scroll"):
                 yield Static(render_detail(self._record), id="detail-body")
             with Vertical(id="transcript-panel"):
+                # The column header (spec 045) — BEFORE the list and OUTSIDE
+                # it. A `ListView` child must be a `ListItem` (see
+                # :func:`_panel_row`), so the header is the list's sibling; the
+                # list then scrolls beneath it and the header stays put with
+                # nothing watching the scroll offset.
+                yield Static(_PANEL_HEADER, id="transcript-panel-header")
                 # One row per transcript, in the order the pure layer sorted
                 # them (game-01 … game-NN). Empty when the run has none —
                 # on_mount then hides this and shows the message instead.
@@ -648,15 +697,52 @@ class DetailScreen(Screen):
         yield Footer()
 
     def on_mount(self) -> None:
-        """Show the panel's list (or the "no transcripts" note), then focus details.
+        """Title the panel, show its list (or the note), then focus details.
 
-        Two jobs. First the hide-list/show-message posture reused verbatim from
+        Three jobs. First the strip **names itself** (spec 045, functional-spec
+        §2.3): ``#transcript-panel`` takes the ``border_title`` ``"Games"`` —
+        the same word the ``t`` and ``right`` key hints in ``BINDINGS`` already
+        spend on this panel ("Games", shown in the Footer), so the key that
+        moves focus here and the name of what it lands on agree. A strip of bare
+        numbers is otherwise unidentifiable as a list of games.
+
+        **In Python, not CSS**, because ``border_title`` is a widget *attribute*
+        rather than a style. Checked against the installed Textual (8.2.4):
+        ``StylesBase`` carries ``border_title_align``, ``border_title_color``,
+        ``border_title_background`` and ``border_title_style`` — CSS
+        ``border-title-align`` / ``title-color`` / ``title-background`` /
+        ``title-text-style`` — every one of which *paints* a title that already
+        exists, and none of which can supply its text. The attribute is the only
+        route, and it is the idiom ``ui/app.py``'s ``on_mount`` already uses
+        (``private.border_title = "Whispers (only you see this)"``): query the
+        widget, assign the attribute.
+
+        It costs **no geometry**. ``#transcript-panel`` already carries ``border:
+        round $panel`` in every state — the focus indication depends on it — so
+        the title paints into a border line that is drawn either way. Measured
+        with the title set: the panel is still 22 columns outside and the details
+        pane beside it still 78, with and without transcripts alike.
+
+        The title is set **unconditionally**, ahead of the branch below. A run
+        with no preserved games is still the Games strip; functional-spec §2.6's
+        last criterion withholds the *header*, the day counts and the survivor
+        counts from such a run — not the panel's own name.
+
+        Second the hide-list/show-message posture reused verbatim from
         ``TranscriptListScreen`` — with the one deliberate difference that
         this does **not** focus the list. The deleted screen's ``on_mount`` ended
         in ``listing.focus()``; that must **not** be carried over, because here
         the list is a *pane*, not the whole screen.
 
-        Second, **focus starts on the details pane** (functional-spec §2.2), so
+        **The column header hides with the list**, in that same branch rather
+        than in a second decision of its own — one condition cannot drift out of
+        step with itself, and a header left standing over a hidden list would
+        label columns that are not there (functional-spec §2.6's last criterion:
+        the note, and no header). ``display = False``, the same mechanism the
+        list uses, so the header's one line returns to the panel instead of
+        sitting blank above the note.
+
+        Third, **focus starts on the details pane** (functional-spec §2.2), so
         the reviewer's first ``up``/``down`` scrolls the figures they came to
         read. Textual's auto-focus happens to land there already — ``#detail-scroll``
         is the first focusable widget in ``compose`` order — but that is
@@ -665,9 +751,15 @@ class DetailScreen(Screen):
         failing at the point of the change. Naming the target makes the guarantee
         explicit and independent of composition order.
         """
+        panel = self.query_one("#transcript-panel", Vertical)
+        header = self.query_one("#transcript-panel-header", Static)
         listing = self.query_one("#transcript-panel-list", ListView)
         empty = self.query_one("#transcript-panel-empty", Static)
+        # Unconditional, and before the branch: the strip is the Games strip
+        # whether or not this run kept any (see the docstring).
+        panel.border_title = "Games"
         if not self._entries:
+            header.display = False
             listing.display = False
             empty.display = True
         else:
@@ -777,6 +869,28 @@ _NO_TRANSCRIPTS_MESSAGE = "No transcripts for this run."
 _ROW_NUMBER_WIDTH = 2
 _ROW_DAY_WIDTH = 3
 _ROW_GAP = "  "
+
+# The header line above the rows (spec 045, functional-spec §2.3) — the one
+# place the three columns are named, and the only labelling this panel carries:
+# no legend, no help text, and no explanation of the two side colours.
+#
+# It is DERIVED from the grid constants above rather than typed as a literal, so
+# the header cannot drift out of alignment when a width changes: `#` is
+# right-aligned in the number's two columns (over the number's last digit, which
+# is where `01` and `50` share their right edge), `day` fills the day count's
+# three, and `L-M` occupies the three survivor columns one for one. Twelve
+# characters, exactly the row's twelve.
+#
+# Rendered as a plain `Static` that is a SIBLING of the list — never a row in it
+# — for the `_nodes` reason spelled out in :func:`_panel_row` and in the
+# `#transcript-panel-header` CSS rule.
+_PANEL_HEADER = (
+    "#".rjust(_ROW_NUMBER_WIDTH)
+    + _ROW_GAP
+    + "day".rjust(_ROW_DAY_WIDTH)
+    + _ROW_GAP
+    + "L-M"
+)
 
 # The stem prefix the eval harness gives every preserved game (`game-01.txt`),
 # and the one thing a row DROPS. Functional-spec §2.1 requires the number to

@@ -11270,3 +11270,371 @@ async def test_the_list_and_the_reading_view_speak_the_same_two_colours(
                 "— the reviewer has to learn the pair twice, and "
                 "functional-spec §2.2's crossing is broken"
             )
+
+
+# ---------------------------------------------------------------------------
+# B16.10 - B16.13 The strip says what it is and what its columns are (spec
+#         045, Slice 3) — the panel gained a header line naming its three
+#         columns and a title naming the strip itself.
+#
+#         BOTH ARE STRUCTURE, NOT DECORATION, and that is why they are
+#         asserted here rather than left to the eye. The header is a `Static`
+#         SIBLING of the `ListView`, not a row inside it: a non-`ListItem`
+#         child would shift every `Selected.index` by one and open the game
+#         ABOVE the row a reviewer picked (`ListView.watch_index` and
+#         `highlighted_child` both `assert isinstance(..., ListItem)`).
+#         Functional-spec §2.3 states the consequence a reviewer can see —
+#         "every one of the run's games is still listed; the header has taken
+#         the place of no game" — so B16.11 asserts exactly that, over a
+#         scrolled 50-game list.
+#
+#         ALIGNMENT IS ASSERTED AS SCREEN COLUMNS, never by eye and never by
+#         comparing the header string against the module constant that builds
+#         it (which would pass on any pair of strings derived from the same
+#         typo). B16.10 reads the laid-out x of each survivor cell back off
+#         the widgets Textual actually positioned and requires the header's
+#         `L`, `-` and `M` to land on those same columns. The game number and
+#         the day count have no widget of their own to measure — they are two
+#         fields inside ONE prefix `Label`, for the reason B16.2's docstring
+#         gives — so those two columns are asserted as slices of the twelve
+#         character columns the grid fixes.
+#
+#         `display`, NOT `visible`. §2.6's last criterion withholds the header
+#         from a run with no preserved games, and a header that merely painted
+#         blank would still spend the panel's first row. B16.12 therefore pins
+#         the header at zero height with the note sitting in the row it would
+#         have occupied, which is the difference the two mechanisms make.
+# ---------------------------------------------------------------------------
+
+# The header line as a reviewer reads it. Asserted BY VALUE rather than
+# imported from the module that renders it — the convention this file follows
+# for every user-visible string (see `_EMPTY_LEDGER_MESSAGE`) — so the test
+# pins what reaches the screen instead of restating the constant that produced
+# it.
+_PANEL_HEADER_LINE = " #  day  L-M"
+
+# The two columns of the twelve-column grid (tech-spec §2.4) that live INSIDE
+# the row's single prefix segment, and therefore have no laid-out widget of
+# their own: the game number in 0-1 and the day count in 4-6. The three
+# survivor columns (9, 10, 11) are three separate widgets and are asserted as
+# screen positions instead.
+_NUMBER_COLUMNS = slice(0, 2)
+_DAY_COLUMNS = slice(4, 7)
+
+# The size of the run B16.11 scrolls. Functional-spec §2.3's second criterion
+# is stated about "a 50-game list" specifically, because that is the size at
+# which the panel raises a scrollbar and the list genuinely scrolls beneath the
+# header; a run that fits on screen could not fail the claim.
+_SCROLLING_RUN_SIZE = 50
+
+
+def _panel_header(screen: DetailScreen) -> Static:
+    """The panel's column header widget — the list's SIBLING, not a row in it."""
+    return screen.query_one("#transcript-panel-header", Static)
+
+
+def _header_line(screen: DetailScreen) -> str:
+    """The header's text, read off its renderable — NOT through markup.
+
+    The same route :func:`_segment_text` takes, and for the same reason: the
+    header's alignment lives in its **spaces**, including a leading one, and a
+    round trip through ``str()`` and ``Text.from_markup`` is free to lose them.
+    The renderable's type is asserted for the same reason too — it pins a
+    measured fact about the installed Textual (8.2.4), that a ``Static`` hands
+    back Textual's own ``Content``.
+    """
+    rendered = _panel_header(screen).render()
+    assert isinstance(rendered, Content), (
+        f"the column header rendered a {type(rendered).__name__}, expected Content"
+    )
+    return rendered.plain
+
+
+def _panel_row_cells(screen: DetailScreen) -> list[list[Label]]:
+    """Every panel row's segment WIDGETS, in column order.
+
+    The widget-level sibling of :func:`_panel_row_segments`: that helper reads
+    what a row says, this one keeps the laid-out widgets so their screen
+    positions can be compared against the header's.
+    """
+    listing = screen.query_one("#transcript-panel-list", ListView)
+    return [list(item.query(Label)) for item in listing.query(ListItem)]
+
+
+# ---------------------------------------------------------------------------
+# B16.10 The header sits over the columns it names
+# ---------------------------------------------------------------------------
+
+
+async def test_the_header_labels_sit_over_the_columns_they_name(
+    tmp_path: Path,
+) -> None:
+    """Functional-spec §2.3's first criterion — and that it is *aligned*.
+
+    "A header line names the three columns" is only worth anything if each
+    label is over the column it names, so the claim is asserted as an equality
+    between screen positions Textual actually laid out: the header's ``L``,
+    ``-`` and ``M`` must land in the very columns the row's Law-abiding cell,
+    separator and Mafia cell occupy. Nothing here compares the header against
+    the constant that builds it — two strings derived from one typo would
+    agree with each other and disagree with the rows.
+
+    Two rows, and deliberately the same extremes B16.2 uses: the narrowest and
+    the widest thing each field can hold (``01`` against ``50``, a one-digit
+    day count against a two-digit one). One header line stands over fifty
+    varied rows in the real panel, so alignment that held only for the
+    narrowest row would be no alignment at all.
+    """
+    ledger = _row_ledger(
+        tmp_path,
+        {
+            "game-01.txt": _game_with_outcome(
+                1, days=3, law_alive=2, mafia_alive=2, law_killed=2
+            ),
+            "game-50.txt": _game_with_outcome(
+                50, days=12, law_alive=2, mafia_alive=2, law_killed=2
+            ),
+        },
+        name="header-grid.yaml",
+    )
+
+    app = LedgerViewerApp(path=ledger)
+    async with app.run_test(size=_PANEL_TERMINAL_SIZE) as pilot:
+        await pilot.pause()
+        screen = await _open_detail_for_first_row(pilot)
+
+        # The header is there, and it says the three column names.
+        assert _panel_header(screen).display is True
+        assert _header_line(screen) == _PANEL_HEADER_LINE
+
+        header_x = _panel_header(screen).region.x
+        rows = _panel_row_cells(screen)
+        assert rows, "no rows to align the header against — the claim is vacuous"
+
+        for row, cells in zip(_panel_labels(screen), rows, strict=True):
+            prefix, law_abiding, separator, mafia = cells
+            # The two lines start in the same column, which is what the number
+            # and day-count slices below are measured against.
+            assert prefix.region.x == header_x, (
+                f"the header starts at column {header_x} and row {row!r} at "
+                f"{prefix.region.x} — the two lines are not on one grid"
+            )
+            # ...and each survivor label is over the cell it names.
+            for glyph, cell in (
+                ("L", law_abiding),
+                ("-", separator),
+                ("M", mafia),
+            ):
+                assert header_x + _PANEL_HEADER_LINE.index(glyph) == cell.region.x, (
+                    f"the header's {glyph!r} sits in column "
+                    f"{header_x + _PANEL_HEADER_LINE.index(glyph)} but the cell "
+                    f"it names is in column {cell.region.x} on row {row!r} — a "
+                    "reviewer reading down from the label lands on the wrong "
+                    "number"
+                )
+
+        # The number and the day count, which share the ONE prefix widget and
+        # so have no column of their own to measure: the header names columns
+        # 0-1 and 4-6, and that is exactly where every row puts its two values.
+        assert (
+            _PANEL_HEADER_LINE[_NUMBER_COLUMNS],
+            _PANEL_HEADER_LINE[_DAY_COLUMNS],
+        ) == (" #", "day")
+        assert [
+            (row[_NUMBER_COLUMNS], row[_DAY_COLUMNS]) for row in _panel_labels(screen)
+        ] == [("01", " 3d"), ("50", "12d")]
+
+
+# ---------------------------------------------------------------------------
+# B16.11 The header stays put, and it costs no game its row
+# ---------------------------------------------------------------------------
+
+
+async def test_the_header_survives_a_scroll_and_displaces_no_game(
+    tmp_path: Path,
+) -> None:
+    """Functional-spec §2.3's second and third criteria, on a scrolled list.
+
+    The two halves are one claim, and it is the claim the header's *structure*
+    was chosen for: the header is a sibling of the ``ListView`` rather than a
+    row in it, so the list scrolls **beneath** it. A header that had been made
+    a list row would look right on the first screenful and then either scroll
+    away with the rows or sit at index 0 having taken game 1's place — and
+    would shift every ``Selected.index`` by one, so a reviewer would open the
+    game above the one they picked.
+
+    So: walk to the bottom of a 50-game run by the reviewer's own keys, then
+    assert the header has not moved a column, that it is still clear of the
+    list rather than painted over it, and that every one of the run's games is
+    still listed, in order. The scroll offset is asserted to have actually
+    moved first — a list that never scrolled would satisfy all of the above
+    while proving nothing.
+    """
+    games = {
+        f"game-{number:02d}.txt": _game_with_outcome(
+            number, days=3, law_alive=2, mafia_alive=2, law_killed=2
+        )
+        for number in range(1, _SCROLLING_RUN_SIZE + 1)
+    }
+    expected_rows = [f"{number:02d}   3d  2-2" for number in range(1, len(games) + 1)]
+    ledger = _row_ledger(tmp_path, games, name="header-scroll.yaml")
+
+    app = LedgerViewerApp(path=ledger)
+    async with app.run_test(size=_PANEL_TERMINAL_SIZE) as pilot:
+        await pilot.pause()
+        screen = await _open_detail_for_first_row(pilot)
+
+        listing = screen.query_one("#transcript-panel-list", ListView)
+        before = _panel_header(screen).region
+        assert listing.scroll_offset.y == 0
+
+        # Down to the last game, by the keys a reviewer presses.
+        await _highlight_game(pilot, len(games) - 1)
+
+        # The list really did scroll, so everything below is a claim about a
+        # scrolled list rather than about a list that fitted on screen.
+        assert listing.scroll_offset.y > 0
+
+        # §2.3: the header is still there, in the same place, saying the same
+        # thing — and still clear of the list rather than painted over its top
+        # row.
+        header = _panel_header(screen)
+        assert header.display is True
+        assert header.region == before
+        assert _header_line(screen) == _PANEL_HEADER_LINE
+        assert not header.region.overlaps(listing.region), (
+            "the header is overlapping the list, so whatever it covers is a "
+            "game row the reviewer cannot see"
+        )
+
+        # §2.3's third criterion: the header has taken the place of no game.
+        assert _panel_labels(screen) == expected_rows
+        assert len(_panel_labels(screen)) == len(games)
+
+        # ...and the last one is genuinely on screen at the bottom of the
+        # walk, so no row was lost off the end either.
+        last_row = listing.query(ListItem).nodes[-1]
+        assert listing.content_region.contains_region(last_row.region)
+
+
+# ---------------------------------------------------------------------------
+# B16.12 A run with no preserved games shows its note and no header
+# ---------------------------------------------------------------------------
+
+
+async def test_a_run_with_no_games_shows_the_note_and_no_header(
+    tmp_path: Path,
+) -> None:
+    """Functional-spec §2.6's last criterion — the note, and nothing added to it.
+
+    "The same 'no transcripts for this run' note as before, with no day counts,
+    survivor counts or header." All three absences are asserted, because the
+    criterion is that this state gained *nothing*: the note reads exactly as it
+    did before the spec, and there are no rows to carry numbers.
+
+    The header's absence is pinned as **taking no row**, not as blank text. The
+    two ways to hide a Textual widget are not the same thing here: ``visible =
+    False`` would leave the header occupying the panel's first row, so the note
+    would start one line lower and the panel would carry a blank strip above
+    it. Measured on the installed Textual (8.2.4), the header's own ``region``
+    collapses to nothing under **either** mechanism, so its height is not what
+    tells them apart — the NOTE's position is. Hence the third assertion: the
+    note sits in the panel's own first inner row, the row the header would
+    otherwise have spent.
+    """
+    ledger = _write_ledger(
+        tmp_path,
+        _doc_with_transcript_dir("2026-06-19", None),
+        name="header-empty.yaml",
+    )
+
+    app = LedgerViewerApp(path=ledger)
+    async with app.run_test(size=_PANEL_TERMINAL_SIZE) as pilot:
+        await pilot.pause()
+        screen = await _open_detail_for_first_row(pilot)
+
+        header = _panel_header(screen)
+        listing = screen.query_one("#transcript-panel-list", ListView)
+        empty = screen.query_one("#transcript-panel-empty", Static)
+        panel = screen.query_one("#transcript-panel", Vertical)
+
+        # No header — and gone from the layout, not merely painted blank.
+        assert header.display is False
+        assert header.region.height == 0
+        assert empty.region.y == panel.content_region.y, (
+            "the note does not start at the panel's first inner row, so the "
+            "hidden header is still spending one"
+        )
+
+        # The note, exactly as it was before this spec...
+        assert listing.display is False
+        assert empty.display is True
+        assert plain_text(empty) == _NO_TRANSCRIPTS_MESSAGE
+        # ...and no day counts and no survivor counts, there being no rows.
+        assert _panel_labels(screen) == []
+
+
+# ---------------------------------------------------------------------------
+# B16.13 The strip carries its own name
+# ---------------------------------------------------------------------------
+
+
+async def test_the_games_strip_is_titled_games(tmp_path: Path) -> None:
+    """Functional-spec §2.3's fourth criterion — the strip reads "Games".
+
+    A column of bare numbers is not identifiable as a list of games without it,
+    which is why the title was added alongside the header rather than instead
+    of it: the header names the columns, the title names the strip. The word is
+    the one the footer's key hint already spends on this panel, so the key that
+    moves focus here and the name of what it lands on agree.
+
+    **Asserted in both states, and that pins a reading of an ambiguity.** The
+    functional spec does not settle whether the title survives a run with no
+    preserved games: §2.3's criterion is written about "the strip the games are
+    listed in", while §2.6's last criterion enumerates what such a run must not
+    show — "no day counts, survivor counts or header" — and does not name the
+    title either way. The implementation sets it **unconditionally**, reading
+    §2.6's list as exhaustive in form and §2.3's purpose as keeping the strip
+    identifiable, and this test pins that reading. A future decision to drop
+    the title from an empty run is therefore a deliberate change to this
+    assertion rather than a surprise failure.
+
+    One mount, two runs in one ledger — the same shape the no-layout-shift test
+    uses, and for the same reason: the claim is about both states, and opening
+    them in one session is what makes it one claim.
+    """
+    ledger = _write_ledger(
+        tmp_path,
+        _doc_with_transcript_dir("2026-09-14", _ROW_RUN_ID),
+        _doc_with_transcript_dir("2026-09-15", None),
+        name="header-title.yaml",
+    )
+    _write_run_transcripts(
+        ledger,
+        _ROW_RUN_ID,
+        {
+            "game-01.txt": _game_with_outcome(
+                1, days=3, law_alive=2, mafia_alive=2, law_killed=2
+            )
+        },
+    )
+
+    app = LedgerViewerApp(path=ledger)
+    async with app.run_test(size=_PANEL_TERMINAL_SIZE) as pilot:
+        await pilot.pause()
+
+        # The run WITH games.
+        screen = await _open_detail_for_row(pilot, 0)
+        assert _panel_labels(screen) == ["01   3d  2-2"]
+        assert screen.query_one("#transcript-panel", Vertical).border_title == "Games"
+
+        # Back out to the table, then the run WITHOUT games: still the Games
+        # strip, still named — see the docstring for why that is the pinned
+        # reading rather than the only possible one.
+        await pilot.press("escape")
+        await pilot.pause()
+        assert isinstance(app.screen, LedgerTableScreen)
+        screen = await _open_detail_for_row(pilot, 1)
+        assert _panel_labels(screen) == []
+        assert screen.query_one("#transcript-panel-empty", Static).display is True
+        assert screen.query_one("#transcript-panel", Vertical).border_title == "Games"
