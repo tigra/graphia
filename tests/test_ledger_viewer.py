@@ -1367,7 +1367,7 @@ async def test_t_on_detail_focuses_the_panel_listing_the_runs_games(
         assert len(app.screen_stack) == _DETAIL_STACK_DEPTH
 
         # The list carries one ListItem per game, sorted game-01 before game-02.
-        assert _panel_labels(screen) == ["game-01", "game-02"]
+        assert _panel_labels(screen) == ["01", "02"]
         # The list is shown; the "no transcripts" message is hidden.
         assert listing.display is True
         assert screen.query_one("#transcript-panel-empty", Static).display is False
@@ -1408,7 +1408,7 @@ async def test_selecting_a_game_shows_its_transcript_text(
     async with app.run_test(size=_PANEL_TERMINAL_SIZE) as pilot:
         await pilot.pause()
         screen = await _open_detail_for_first_row(pilot)
-        assert _panel_labels(screen) == ["game-01", "game-02", "game-03"]
+        assert _panel_labels(screen) == ["01", "02", "03"]
 
         # Highlight the game under test via the real key path, then select it.
         await _highlight_game(pilot, picked)
@@ -1737,10 +1737,65 @@ _EXPECTED_PANE_GEOMETRY = {
 }
 
 
-def _panel_labels(screen: DetailScreen) -> list[str]:
-    """The panel list's row labels, read through the widget API."""
+def _segment_text(label: Label) -> str:
+    """One row segment's text, read off its renderable — NOT through markup.
+
+    The shared ``plain_text`` helper ends in ``Text.from_markup(str(rendered))``,
+    which is the wrong route for a row segment twice over: console markup is
+    ``[…]``, and — the reason it actually matters here — the prefix segment pads
+    its column grid with **trailing spaces**, which is exactly what a round trip
+    through ``str()`` and back is free to lose. Reading the renderable directly
+    is the same route ``_transcript_body_content`` (B14) takes, for the same
+    reason.
+
+    Asserts the renderable's type, which pins a measured fact about the
+    installed Textual (8.2.4): a ``Label``'s ``render()`` hands back Textual's
+    own ``Content``. If a future Textual returned something else, the ``.plain``
+    read below would silently be measuring something else.
+    """
+    rendered = label.render()
+    assert isinstance(rendered, Content), (
+        f"a row segment rendered a {type(rendered).__name__}, expected Content"
+    )
+    return rendered.plain
+
+
+def _panel_row_segments(screen: DetailScreen) -> list[list[str]]:
+    """Every panel row's segments, in column order — the rows' STRUCTURE.
+
+    Spec 045 rebuilt each row as a ``Horizontal`` of up to four class-carrying
+    ``Label``s (``01   3d  `` / ``2`` / ``-`` / ``2``), so a row is no longer
+    one label and the old ``item.query_one(Label)`` is no longer a reading of
+    it. Measured on the installed Textual (8.2.4), ``query_one`` does **not**
+    raise on several matches — ``query_exactly_one`` is the method that does —
+    so it quietly returned the **first** segment and every row read as its
+    number alone. A helper that merely stopped a crash would have been the
+    wrong fix; there was no crash.
+
+    Segments come back in DOM order, which is column order, because that is the
+    order :func:`~graphia.ui.ledger_viewer._panel_row` composes them in.
+    """
     listing = screen.query_one("#transcript-panel-list", ListView)
-    return [plain_text(item.query_one(Label)) for item in listing.query(ListItem)]
+    return [
+        [_segment_text(label) for label in item.query(Label)]
+        for item in listing.query(ListItem)
+    ]
+
+
+def _panel_labels(screen: DetailScreen) -> list[str]:
+    """The panel list's rows, **one string per row**, read through the widget API.
+
+    One item per ROW, never one per segment, so that everything counting rows
+    through this helper keeps counting rows — ``len(_panel_labels(screen)) ==
+    len(transcript_files)`` in the fixed-width geometry test below is a fixture
+    sanity check whose meaning depends on it, and a four-segment row would have
+    turned it into a segment count that happened to be a multiple.
+
+    The segments are joined with nothing between them: the prefix segment
+    already carries the grid's gaps as its own trailing spaces, so the join is
+    the row exactly as it reads on screen — ``01   3d  2-2``.
+    """
+    return ["".join(segments) for segments in _panel_row_segments(screen)]
 
 
 async def _open_detail_for_row(pilot, row: int) -> DetailScreen:
@@ -1807,7 +1862,7 @@ async def test_opening_a_run_shows_both_panes_with_nothing_pressed(
             screen.query_one("#detail-body", Static)
         )
         # ...and this run's games in the right one, in the pure layer's order.
-        assert _panel_labels(screen) == ["game-01", "game-02"]
+        assert _panel_labels(screen) == ["01", "02"]
         assert screen.query_one("#transcript-panel-list", ListView).display is True
         assert screen.query_one("#transcript-panel-empty", Static).display is False
 
@@ -1889,7 +1944,7 @@ async def test_details_pane_width_is_identical_with_and_without_transcripts(
 
         # The run WITH games.
         screen = await _open_detail_for_row(pilot, 0)
-        assert _panel_labels(screen) == ["game-01", "game-02"]
+        assert _panel_labels(screen) == ["01", "02"]
         with_transcripts = _pane_geometry(screen)
 
         # Back out to the table, then open the run WITHOUT games.
@@ -2648,7 +2703,7 @@ async def test_returning_from_a_game_leaves_the_same_entry_highlighted(
     async with app.run_test(size=_PANEL_TERMINAL_SIZE) as pilot:
         await pilot.pause()
         screen = await _open_detail_for_row(pilot, 0)
-        assert _panel_labels(screen) == ["game-01", "game-02", "game-03", "game-04"]
+        assert _panel_labels(screen) == ["01", "02", "03", "04"]
 
         # Highlight game-03 (index 2) with real keystrokes — `_highlight_game`
         # asserts the highlight started at 0 and arrived at 2, so the index below
@@ -2668,7 +2723,7 @@ async def test_returning_from_a_game_leaves_the_same_entry_highlighted(
         assert len(app.screen_stack) == _DETAIL_STACK_DEPTH
         assert screen.query_one("#transcript-panel-list", ListView) is listing
         # ...with its rows untouched...
-        assert _panel_labels(screen) == ["game-01", "game-02", "game-03", "game-04"]
+        assert _panel_labels(screen) == ["01", "02", "03", "04"]
         # ...and game-03 STILL highlighted (2, not the 0 or None a rebuilt list
         # would report).
         assert listing.index == 2
@@ -10067,4 +10122,1690 @@ async def test_the_running_status_names_the_keys_that_step_between_matches(
         )
         assert _rendered_sub_title(screen) == _expected_status(
             _JUMP_QUERY, 1, _JUMP_MATCHES
+        )
+
+
+# ===========================================================================
+# B16. Every row says how long its game ran and who was left (spec 045,
+#      Slice 1) — the panel's rows stopped being names and became a row of
+#      NUMBERS: the game's number with the writer's `game-` prefix dropped,
+#      the Days the game played, and the two survivor counts, Law-abiding
+#      first.
+#
+#      WHAT IS ASSERTED HERE, AND WHAT DELIBERATELY IS NOT. The derivation
+#      itself — which Days count, which bullets are deaths, which era writes
+#      its winner sentence indented behind a `Moderator: ` prefix — is already
+#      covered, terminal-free, by `tests/test_game_summary.py` at ~0.007 s an
+#      item. A `run_test()` item in THIS file costs ~0.63 s, so nothing below
+#      re-checks a parsing rule. What is genuinely screen-shaped, and
+#      therefore lives here, is the ROW: that the derived numbers reach it, in
+#      the stated order, on the stated columns, and that the three row SHAPES
+#      (a recorded ending, a game with none, a file that yields nothing) are
+#      three visibly different things.
+#
+#      THE FIXTURES ARE BUILT TO A STATED OUTCOME, never copied out of the
+#      committed corpus. Functional-spec §2.1's second criterion is a golden
+#      read off one real 50-game run, but a test that read that run would be a
+#      test of `evals/transcripts/` rather than of the panel: it would have to
+#      skip wherever the corpus was absent, and it would go red the day
+#      somebody curated that run away. `_game_with_outcome` below reproduces
+#      the run's SHAPE instead, so the golden runs everywhere.
+#
+#      WHY EVERY OTHER PANEL TEST IN THIS FILE NOW READS BARE NUMBERS.
+#      `_TRANSCRIPT_BODY` (B10) carries `<setup>` and `<night>` but no `<day>`
+#      marker at all, so `summarise_game` withholds everything and those rows
+#      are the third shape — the number alone. That is why B11-B13 assert
+#      `["01", "02"]` and not `["01   3d  2-2"]`.
+#
+#      NO COLOUR, NO WEIGHT, NO HEADER. Slice 1 puts the classes on the
+#      segments and styles none of them, so the row is uniform plain text; the
+#      winner-marking assertions belong to Slice 2 and the column header and
+#      the panel's border title to Slice 3.
+# ===========================================================================
+
+# The run these fixtures hang off, and therefore the sibling
+# `transcripts/<run-id>/` dir they are written into, entirely under `tmp_path`.
+_ROW_RUN_ID = "run-row-shape"
+
+# The two winner sentences a finished game ends on, written out the way
+# `tests/test_game_summary.py`'s own era fixtures write them. THAT module holds
+# the pin that keeps them honest — each literal against the
+# `graphia.prompts.ENDGAME_*` constant that emits it — so a UI test can state
+# them plainly instead of dragging the model-facing prompt stack into itself.
+_WINNER_LINE_MAFIA = "The Mafia have won."
+_WINNER_LINE_LAW_ABIDING = "The Law-abiding Citizens have won."
+
+# The two public role labels the roster line and the death bullets name a side
+# by (writer: `graphia.tools.eval_transcript._ROLE_LABELS`).
+_ROLE_LABEL_LAW_ABIDING = "Law-abiding Citizen"
+_ROLE_LABEL_MAFIA = "Mafia"
+
+# Players the builder deals from — a pool per side, so a roster line never has
+# to disambiguate and a reader can tell at a glance which side a name is on.
+_LAW_ABIDING_NAMES = ("Avery", "Mira", "Nadia", "Leif", "Hiroshi", "Rosa")
+_MAFIA_NAMES = ("Amara", "Kenzo", "Dario")
+
+
+def _day_blocks(days: int) -> str:
+    """``days`` flush-left ``<day>`` blocks — the marker the day count counts."""
+    return "".join(f"<day>\nDay {n} begins.\n</day>\n" for n in range(1, days + 1))
+
+
+def _game_with_outcome(
+    game: int,
+    *,
+    days: int,
+    law_alive: int,
+    mafia_alive: int,
+    law_killed: int = 0,
+    mafia_executed: int = 0,
+) -> str:
+    """A synthetic preserved game whose row is the outcome the caller states.
+
+    Written in the modern (post-spec-022) transcript era, which is the era the
+    run this spec's golden comes from is in: flush-left ``<day>`` markers, an
+    ``<endgame>`` block, a flush-left winner sentence, the ``Events this game:``
+    death bullets, and the ``Full roster:`` line the survivor arithmetic stands
+    on.
+
+    The caller states the ENDING — how many of each side lived, and how many
+    died which way — and the roster is derived from it (``alive + killed`` per
+    side) rather than stated separately, so a fixture cannot quietly disagree
+    with the row it is supposed to produce. Law-abiding players die at Night
+    and Mafiosos are executed by Day, which is both the common shape and the
+    only one that exercises both of the writer's two bullet forms.
+
+    The winner is not a third knob either: it is the game's own win condition,
+    so a fixture that leaves a Mafioso standing cannot claim the town won.
+
+    Every player is revealed in the ``Who they really were:`` section, which is
+    what the writer does — and it is the trap the death rule has to survive.
+    Those bullets carry no ``Night N:`` / ``Day N:`` cycle prefix, and a rule
+    that matched a bare ``• `` would count the whole roster as dead, drive the
+    arithmetic negative, and blank every row.
+    """
+    # The roster is DERIVED from the ending the caller stated, never stated
+    # beside it, so a fixture cannot disagree with the row it is meant to
+    # produce. The two guards catch the one way this builder can be misused: a
+    # case asking for more players of a side than there are names to deal.
+    law_roster = law_alive + law_killed
+    mafia_roster = mafia_alive + mafia_executed
+    law = _LAW_ABIDING_NAMES[:law_roster]
+    mafia = _MAFIA_NAMES[:mafia_roster]
+    assert len(law) == law_roster, "the Law-abiding name pool is too small"
+    assert len(mafia) == mafia_roster, "the Mafia name pool is too small"
+
+    roster = [(name, _ROLE_LABEL_LAW_ABIDING) for name in law]
+    roster += [(name, _ROLE_LABEL_MAFIA) for name in mafia]
+    deaths = [
+        f"• Night {n}: {law[n - 1]} ({_ROLE_LABEL_LAW_ABIDING})"
+        for n in range(1, law_killed + 1)
+    ] + [
+        f"• Day {n}: {mafia[n - 1]} ({_ROLE_LABEL_MAFIA}) executed"
+        for n in range(1, mafia_executed + 1)
+    ]
+    winner = _WINNER_LINE_MAFIA if mafia_alive else _WINNER_LINE_LAW_ABIDING
+
+    setup = "".join(f'<player name="{n}" role="{r}" />\n' for n, r in roster)
+    events = "".join(f"{line}\n" for line in deaths)
+    full_roster = ", ".join(f"{name} ({role})" for name, role in roster)
+    personas = "".join(
+        f"• {name} ({role}) — a persona, recorded after the fact.\n"
+        for name, role in roster
+    )
+    return (
+        f"{_numbered_transcript_marker(game)}\n"
+        "\n"
+        "<transcript>\n"
+        "<setup>\n"
+        f"{setup}"
+        "</setup>\n"
+        f"{_day_blocks(days)}"
+        "<endgame>\n"
+        f"{winner}\n"
+        "\n"
+        "Events this game:\n"
+        f"{events}"
+        "\n"
+        f"Full roster: {full_roster}\n"
+        "\n"
+        "Who they really were:\n"
+        f"{personas}"
+        "</endgame>\n"
+        "</transcript>\n"
+    )
+
+
+def _game_with_no_ending(game: int, *, days: int) -> str:
+    """A game that played Days and then simply stops — functional-spec §2.4.
+
+    No winner sentence, no roster, no closing tag: the shape a handful of the
+    preserved games really have, having hit the Day cap of their era. The
+    derivation keeps the one number it can genuinely read and withholds the
+    rest, so the row shows its day count and a dash.
+    """
+    marker = _numbered_transcript_marker(game)
+    return f"{marker}\n\n<transcript>\n{_day_blocks(days)}"
+
+
+def _row_ledger(tmp_path: Path, games: dict[str, str], *, name: str) -> Path:
+    """A one-run ledger whose run holds exactly ``games``, all under ``tmp_path``."""
+    ledger = _write_ledger(
+        tmp_path,
+        _doc_with_transcript_dir("2026-09-14", _ROW_RUN_ID),
+        name=name,
+    )
+    _write_run_transcripts(ledger, _ROW_RUN_ID, games)
+    return ledger
+
+
+def _panel_row_columns(screen: DetailScreen) -> list[list[int]]:
+    """Each row's segments as the COLUMN each one starts in.
+
+    Measured from the row's own left edge, so the answer is about the grid the
+    segments sit on rather than about where the panel happens to be on screen.
+    """
+    listing = screen.query_one("#transcript-panel-list", ListView)
+    return [
+        [label.region.x - item.content_region.x for label in item.query(Label)]
+        for item in listing.query(ListItem)
+    ]
+
+
+# ---------------------------------------------------------------------------
+# B16.1 The three numbers reach the row, Law-abiding count first
+# ---------------------------------------------------------------------------
+
+
+async def test_a_row_carries_its_day_count_and_both_survivor_counts(
+    tmp_path: Path,
+) -> None:
+    """One row, read segment by segment: ``05   2d  4-0``.
+
+    Functional-spec §2.1's first, third and fifth criteria in one mount. The
+    game is shaped like the real game 5 the spec picks out — 2 Days, ending
+    with four Law-abiding Citizens alive and no Mafiosos — *because* that is
+    the one outcome whose two counts are different numbers, so "Law-abiding
+    first, Mafia second" is a claim this row can actually fail. A `2-2` row
+    would satisfy either order.
+    """
+    ledger = _row_ledger(
+        tmp_path,
+        {
+            "game-05.txt": _game_with_outcome(
+                5,
+                days=2,
+                law_alive=4,
+                mafia_alive=0,
+                law_killed=1,
+                mafia_executed=2,
+            )
+        },
+        name="row-content.yaml",
+    )
+
+    app = LedgerViewerApp(path=ledger)
+    async with app.run_test(size=_PANEL_TERMINAL_SIZE) as pilot:
+        await pilot.pause()
+        screen = await _open_detail_for_first_row(pilot)
+
+        # The four segments, in column order: the number and the day count, the
+        # Law-abiding survivors, the separator, the Mafia survivors.
+        assert _panel_row_segments(screen) == [["05   2d  ", "4", "-", "0"]], (
+            "§2.1: the row must carry the game's number, the Days it played "
+            "and both survivor counts — Law-abiding FIRST, Mafia second, so a "
+            "reviewer learns the order once and reads every row after that "
+            "without a label"
+        )
+        # ...which is what the reviewer reads, as one row.
+        assert _panel_labels(screen) == ["05   2d  4-0"]
+
+        # §2.1's fifth criterion: the number stands alone. The word "game" on
+        # every row of a list of games is what paid for the three new numbers.
+        assert "game" not in _panel_labels(screen)[0]
+
+
+# ---------------------------------------------------------------------------
+# B16.2 The row sits on the twelve-column grid
+# ---------------------------------------------------------------------------
+
+
+async def test_every_row_puts_its_numbers_in_the_same_columns(
+    tmp_path: Path,
+) -> None:
+    """The grid tech-spec §2.4 fixes, asserted on the two extremes it must fit.
+
+    ::
+
+        cols   0 1 | 2 3 | 4 5 6 | 7 8 | 9 |10 |11
+        row    0 1 |     |   3 d |     | 2 | - | 2
+        row    5 0 |     | 1 2 d |     | 2 | - | 2
+
+    One mount, two rows chosen to be the narrowest and the widest thing each
+    field can hold: the lowest game number a run has against the highest a
+    50-game run reaches, and a one-digit day count against a two-digit one.
+    Left-aligned padding would put ``50 12d`` and ``01 3d`` in different
+    columns; right alignment is what makes the three numbers read as three
+    columns rather than as a ragged sentence.
+
+    Asserted twice over, and deliberately: the segment COLUMNS come from the
+    laid-out widgets (so this is the grid Textual actually produced), while the
+    joined text pins the alignment INSIDE the prefix segment, which is one
+    widget and therefore has no column of its own to measure.
+    """
+    ledger = _row_ledger(
+        tmp_path,
+        {
+            "game-01.txt": _game_with_outcome(
+                1, days=3, law_alive=2, mafia_alive=2, law_killed=2
+            ),
+            "game-50.txt": _game_with_outcome(
+                50, days=12, law_alive=2, mafia_alive=2, law_killed=2
+            ),
+        },
+        name="row-grid.yaml",
+    )
+
+    app = LedgerViewerApp(path=ledger)
+    async with app.run_test(size=_PANEL_TERMINAL_SIZE) as pilot:
+        await pilot.pause()
+        screen = await _open_detail_for_first_row(pilot)
+
+        # The three survivor columns are 9, 10 and 11 on BOTH rows — the prefix
+        # occupies 0-8 whatever it happens to say.
+        assert _panel_row_columns(screen) == [[0, 9, 10, 11], [0, 9, 10, 11]]
+
+        # And inside the prefix: the number right-aligned in columns 0-1 (so
+        # `01` and `50` share a right edge) and the day count right-aligned in
+        # 4-6 (so the `d` of `3d` and of `12d` both land in column 6).
+        assert _panel_labels(screen) == ["01   3d  2-2", "50  12d  2-2"]
+
+
+# ---------------------------------------------------------------------------
+# B16.3 The six-row golden
+# ---------------------------------------------------------------------------
+
+# Functional-spec §2.1's second criterion, as the six games' SHAPES: the first
+# six games of the 50-game local run of 2026-09-14 — `3` days `2-2`, `2` days
+# `2-2`, `3` days `2-2`, `3` days `2-2`, `2` days `4-0`, `3` days `2-2`.
+#
+# Game 5 is the point of the criterion and of the whole spec: in a run where
+# every other game ends at the parity the Mafia win on, it is the one the town
+# actually won, and a reviewer scanning the list should go straight to it. It
+# is therefore the row that makes this golden non-vacuous — six identical rows
+# would pass against almost any bug.
+_GOLDEN_GAMES = (
+    # days, law alive, mafia alive, law killed at Night, mafia executed by Day
+    (3, 2, 2, 2, 0),
+    (2, 2, 2, 2, 0),
+    (3, 2, 2, 2, 0),
+    (3, 2, 2, 2, 0),
+    (2, 4, 0, 1, 2),
+    (3, 2, 2, 2, 0),
+)
+
+_GOLDEN_ROWS = [
+    "01   3d  2-2",
+    "02   2d  2-2",
+    "03   3d  2-2",
+    "04   3d  2-2",
+    "05   2d  4-0",
+    "06   3d  2-2",
+]
+
+
+async def test_the_first_six_rows_read_as_the_spec_says_they_do(
+    tmp_path: Path,
+) -> None:
+    """The golden: six rows, in order, exactly as functional-spec §2.1 states.
+
+    Against a fixture reproducing that run's shape rather than the run itself,
+    so the golden runs wherever the suite does and cannot be broken by curating
+    a transcript dir away.
+
+    One equality carries it — every row at once, in order — so a failure names
+    the row that moved rather than merely reporting that a count was wrong.
+    """
+    ledger = _row_ledger(
+        tmp_path,
+        {
+            f"game-{number:02d}.txt": _game_with_outcome(
+                number,
+                days=days,
+                law_alive=law_alive,
+                mafia_alive=mafia_alive,
+                law_killed=law_killed,
+                mafia_executed=mafia_executed,
+            )
+            for number, (
+                days,
+                law_alive,
+                mafia_alive,
+                law_killed,
+                mafia_executed,
+            ) in enumerate(_GOLDEN_GAMES, start=1)
+        },
+        name="row-golden.yaml",
+    )
+
+    app = LedgerViewerApp(path=ledger)
+    async with app.run_test(size=_PANEL_TERMINAL_SIZE) as pilot:
+        await pilot.pause()
+        screen = await _open_detail_for_first_row(pilot)
+
+        assert _panel_labels(screen) == _GOLDEN_ROWS
+
+        # §2.1's fifth criterion over the whole list rather than over one row:
+        # no row contains the word "game".
+        assert [row for row in _panel_labels(screen) if "game" in row] == []
+
+
+# ---------------------------------------------------------------------------
+# B16.4 The three row shapes are three different things
+# ---------------------------------------------------------------------------
+
+
+async def test_a_game_with_no_recorded_ending_shows_a_dash_not_a_pair(
+    tmp_path: Path,
+) -> None:
+    """Functional-spec §2.4, beside the two shapes it has to stay distinct from.
+
+    One run, three games, one of each shape — a recorded ending, Days but no
+    ending, and a file the derivation can read nothing out of. Asserted
+    together in one mount **because the claim is that they differ**: a ``2d  —``
+    row means nothing unless the row beside it is showing real standings, and a
+    dash that had quietly replaced every row's counts would pass a test that
+    looked only at the game with no ending.
+
+    The third game's body is ``_TRANSCRIPT_BODY``, which carries no ``<day>``
+    marker at all — the same reason every other panel test in this file reads
+    its rows as bare numbers.
+    """
+    ledger = _row_ledger(
+        tmp_path,
+        {
+            "game-01.txt": _game_with_outcome(
+                1, days=3, law_alive=2, mafia_alive=2, law_killed=2
+            ),
+            "game-02.txt": _game_with_no_ending(2, days=2),
+            "game-03.txt": _TRANSCRIPT_BODY,
+        },
+        name="row-shapes.yaml",
+    )
+
+    app = LedgerViewerApp(path=ledger)
+    async with app.run_test(size=_PANEL_TERMINAL_SIZE) as pilot:
+        await pilot.pause()
+        screen = await _open_detail_for_first_row(pilot)
+
+        assert _panel_row_segments(screen) == [
+            ["01   3d  ", "2", "-", "2"],
+            ["02   2d  ", "—"],
+            ["03"],
+        ]
+
+        # §2.4, said as the thing it is about rather than as a repeat of the
+        # equality above: the row keeps the day count it can genuinely read,
+        # and what follows it is NOT a pair of survivor numbers. A `0-0` there
+        # would read as real final standings.
+        prefix, *standings = _panel_row_segments(screen)[1]
+        assert prefix == "02   2d  "
+        assert standings == ["—"]
+        assert not any(char.isdigit() for part in standings for char in part), (
+            "a game with no recorded ending must show no survivor number at all"
+        )
+
+
+# ---------------------------------------------------------------------------
+# B16.5 - B16.9 The winning side stands out (spec 045, Slice 2) — and how a
+#         cell's colour and weight are read back.
+#
+#         WHAT IS MEASURED, AND WHY IT IS THE COMPOSITED CELL. A segment's own
+#         `Label.styles.color` is what the cascade *declared*; it is not what
+#         the reviewer sees. Both theme variables in play are `auto NN%` — a
+#         BLEND against whatever background the glyph actually lands on, not a
+#         colour (`$text-muted` is `auto 60%`, `$block-cursor-foreground` is
+#         `auto 87%`) — and the row's background is itself two things, because
+#         `ListView:focus` adds a `background-tint` that lifts `$surface` on
+#         textual-dark and drops it on textual-light. So every reading below
+#         comes from `Screen.get_style_at`: the style of the COMPOSITED buffer
+#         at that cell, real stacked background and already-blended foreground.
+#         That is the only reading a contrast ratio can honestly come from.
+#
+#         THE THEME IS SET BEFORE `run_test()` COMPOSES ANYTHING — see
+#         :func:`_viewer_in_theme`, which exists to make that ordering hard to
+#         get wrong. Setting it afterwards measures the previous theme's
+#         palette; that is the mistake that produced a false 1.69:1 reading
+#         during this spec's technical design.
+#
+#         THE OUTCOME IS ASSERTED, NEVER THE SELECTOR. Not one assertion below
+#         names a CSS rule, a theme variable or a colour literal: they are all
+#         relations between cells read off the screen — this one is bold and
+#         those three are not, this one's colour differs from that one's, every
+#         one of them clears a contrast floor. The rules can be retuned, the
+#         variables swapped and the specificity rewritten, and these tests go
+#         on meaning exactly what they mean now.
+#
+#         TWO OF THEM ARE WITNESSES FOR TRAPS THAT SHIP LOOKING CORRECT, and
+#         both were verified by mutation — the rule broken, the test watched
+#         going red, the rule restored:
+#
+#         * B16.6 pins EXACTLY ONE bold segment on the marked row, never "the
+#           winner is bold". Textual's `.-highlight` sets `text-style` on the
+#           `ListItem`, and `DOMNode.rich_style` accumulates it down to every
+#           `Label` inside, so without an explicit clear all four segments come
+#           back bold — and the row still looks right, because the winner is
+#           bold too. Verified: deleting the clears takes the FOCUSED row from
+#           1 of 4 bold to 4 of 4, on both themes, while the blurred row is
+#           untouched (`$block-cursor-blurred-text-style` is `none`). A check
+#           run only on the blurred row would pass while the feature is broken,
+#           which is why B16.6 asserts both states.
+#         * B16.7 pins every segment of the marked row at 3:1. `$text-muted`'s
+#           blend re-resolves on the cursor's blue and can out-score the
+#           override on specificity; verified by mutation, the losing count
+#           reads 2.57:1 on textual-dark focused when it does.
+#
+#         `textual-ansi` IS NOT SWEPT HERE, deliberately: converting ANSI
+#         defaults to truecolour for scoring reports black-on-black, which is
+#         the measurement lying rather than a terminal behaviour. That theme is
+#         established instead by spec 038's categorical route, and the finding
+#         is recorded in spec 045's `technical-considerations.md` §2.3.
+# ---------------------------------------------------------------------------
+
+# The two builtin themes whose palettes are concrete colours, so a contrast
+# ratio computed from them is a fact about this stylesheet. `textual-ansi` is
+# deliberately absent — see the banner above.
+_TRUECOLOUR_THEMES = ["textual-dark", "textual-light"]
+
+# WCAG AA for normal-size text — the floor every cell of an ORDINARY row
+# clears. Measured tightest: 5.06:1, a winning Mafia count on textual-dark with
+# the panel focused. Real headroom, without being slack.
+_AA_NORMAL_TEXT = 4.5
+
+# The floor on the MARKED row, where Textual's own cursor background is kept
+# exactly as it ships (tech-spec §2.3 measured six candidate overrides; only
+# one cleared AA and it made the mark invisible). 3:1 is WCAG AA's floor for
+# large text and UI components, and it is the number tech-spec §2.3's risk
+# table commits the losing count to. Measured tightest: 3.78:1, textual-dark
+# with the panel focused.
+_LEGIBLE_ON_THE_MARK = 3.0
+
+
+def _viewer_in_theme(ledger: Path, theme: str) -> LedgerViewerApp:
+    """The viewer with its theme already set — **before** anything composes.
+
+    The ordering is load-bearing rather than tidy. A screen that composed under
+    one palette has already been painted; reading its cells back afterwards
+    measures the palette it composed under, not the one just assigned. That is
+    not hypothetical — it is the mistake that produced a false 1.69:1 reading
+    for the Law-abiding hue during this spec's technical design, when the true
+    light-theme value is a dark blue reading 8.97:1.
+
+    (The CSS-classed segments this section measures do in fact re-resolve on a
+    live theme change — one of the reasons tech-spec §2.3 prefers them to spec
+    038's baked spans. Composing under the theme is still what a reviewer
+    actually gets, so it is what these tests measure.)
+
+    The assignment doubles as the guard for a theme that stopped existing:
+    ``App.theme`` is a validated reactive and raises ``InvalidThemeError`` on a
+    name Textual has not registered, so a renamed built-in fails loudly here
+    instead of silently sampling the default palette twice.
+    """
+    app = LedgerViewerApp(path=ledger)
+    app.theme = theme
+    return app
+
+
+def _relative_luminance(colour: tuple[int, int, int]) -> float:
+    """WCAG relative luminance of an 8-bit RGB triplet."""
+
+    def channel(value: int) -> float:
+        srgb = value / 255
+        return srgb / 12.92 if srgb <= 0.04045 else ((srgb + 0.055) / 1.055) ** 2.4
+
+    red, green, blue = colour
+    return 0.2126 * channel(red) + 0.7152 * channel(green) + 0.0722 * channel(blue)
+
+
+def _contrast_ratio(
+    foreground: tuple[int, int, int], background: tuple[int, int, int]
+) -> float:
+    """The WCAG contrast ratio between two RGB triplets — 1.0 to 21.0.
+
+    The formula every contrast number in spec 045's technical considerations
+    was produced with, written out here rather than imported: it is four lines,
+    it has no dependency, and having it at the assertion site is what lets a
+    failure read as "this cell fell to 2.57:1" rather than as an opaque boolean.
+    """
+    lighter, darker = sorted(
+        (_relative_luminance(foreground), _relative_luminance(background)),
+        reverse=True,
+    )
+    return (lighter + 0.05) / (darker + 0.05)
+
+
+def _hex(colour) -> str:
+    """A Rich colour as ``#rrggbb`` — the form a failed equality reads in."""
+    triplet = colour.get_truecolor()
+    return f"#{triplet.red:02x}{triplet.green:02x}{triplet.blue:02x}"
+
+
+class _CellReading(NamedTuple):
+    """One row segment as it really reaches the terminal.
+
+    ``colour`` and ``background`` are ``#rrggbb`` strings rather than colour
+    objects, so a failed equality prints two hexes a human can compare.
+    """
+
+    text: str
+    colour: str
+    background: str
+    bold: bool
+    contrast: float
+
+
+def _read_cell(screen: DetailScreen, label: Label) -> _CellReading:
+    """Read one segment's COMPOSITED style back off the screen buffer.
+
+    ``Screen.get_style_at``, and not ``label.styles`` or ``label.rich_style``:
+    it returns the cell as composited — the real stacked background
+    (``ListView:focus``'s ``background-tint`` included) with the foreground
+    already blended against it. Both variables in play here are blends rather
+    than colours, so a declared value would be the wrong thing to score.
+    """
+    style = screen.get_style_at(label.region.x, label.region.y)
+    assert style.color is not None and style.bgcolor is not None, (
+        "the composited cell carried no colour at all, so nothing measured "
+        "from it below means anything"
+    )
+    # The non-vacuity guard for the sweep itself: on a truecolour theme every
+    # one of these resolves to a concrete hue. A default ("the terminal
+    # decides") colour converts to black for scoring, which would report
+    # black-on-black and make every ratio below a fiction — exactly why
+    # `textual-ansi` is out of this section's scope.
+    assert not style.color.is_default and not style.bgcolor.is_default, (
+        "a cell resolved to the terminal default rather than to a concrete "
+        "colour, so its measured contrast is not a fact about this stylesheet"
+    )
+    foreground = style.color.get_truecolor()
+    background = style.bgcolor.get_truecolor()
+    return _CellReading(
+        text=_segment_text(label),
+        colour=_hex(style.color),
+        background=_hex(style.bgcolor),
+        bold=bool(style.bold),
+        contrast=_contrast_ratio(
+            (foreground.red, foreground.green, foreground.blue),
+            (background.red, background.green, background.blue),
+        ),
+    )
+
+
+def _read_row(screen: DetailScreen, index: int) -> list[_CellReading]:
+    """Every segment of panel row ``index``, in column order."""
+    listing = screen.query_one("#transcript-panel-list", ListView)
+    item = listing.query(ListItem).nodes[index]
+    return [_read_cell(screen, label) for label in item.query(Label)]
+
+
+def _is_marked(screen: DetailScreen, index: int) -> bool:
+    """Whether the list is painting its cursor on row ``index``."""
+    listing = screen.query_one("#transcript-panel-list", ListView)
+    return listing.query(ListItem).nodes[index].has_class("-highlight")
+
+
+def _bold_cells(cells: list[_CellReading]) -> list[str]:
+    """The text of every segment that came back bold — what a failure prints."""
+    return [cell.text for cell in cells if cell.bold]
+
+
+def _marking_ledger(tmp_path: Path, *, name: str) -> Path:
+    """One run, three games: a row to be marked, a Mafia win, a Law-abiding win.
+
+    Row 0 is the row the list marks the moment the screen opens, so the two
+    rows an ORDINARY-row claim can be made about are 1 and 2 — row 0 is never
+    ordinary and is here to absorb the mark.
+
+    The two winners sit on rows whose counts are DIFFERENT NUMBERS (``1-3`` and
+    ``4-0``), so "the winning side's cell" is identifiable by the digit it
+    carries and not only by the column it sits in. The parity case, where that
+    is exactly not true, is B16.8's whole subject.
+    """
+    return _row_ledger(
+        tmp_path,
+        {
+            "game-01.txt": _game_with_outcome(
+                1, days=3, law_alive=2, mafia_alive=2, law_killed=2
+            ),
+            "game-02.txt": _game_with_outcome(
+                2, days=3, law_alive=1, mafia_alive=3, law_killed=2
+            ),
+            "game-03.txt": _game_with_outcome(
+                3, days=2, law_alive=4, mafia_alive=0, law_killed=1, mafia_executed=2
+            ),
+        },
+        name=name,
+    )
+
+
+# What that run reads as. Asserted by B16.5 for a reason beyond fixture sanity:
+# functional-spec §2.2's fifth criterion is that the winner is named nowhere on
+# the row in words or letters, and the marking having added no glyph at all is
+# what makes that true.
+_MARKING_ROWS = ["01   3d  2-2", "02   3d  1-3", "03   2d  4-0"]
+
+
+# ---------------------------------------------------------------------------
+# B16.5 On an ordinary row, the winner is coloured and the loser is dimmed
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize("theme", _TRUECOLOUR_THEMES)
+async def test_an_ordinary_row_colours_the_winner_and_dims_the_loser(
+    tmp_path: Path, theme: str
+) -> None:
+    """Functional-spec §2.2's first, second and sixth criteria, both winners.
+
+    One mount per theme, two ordinary rows in it — a game the Mafia won
+    (``1-3``) and a game the Law-abiding Citizens won (``4-0``) — because §2.2
+    states the requirement once per side and a rule that coloured only one of
+    them would satisfy either criterion alone.
+
+    Read in BOTH focus states within the one mount, which is not padding: the
+    panel's own background differs between them (``ListView:focus`` adds a
+    ``background-tint``), so "clears 4.5:1" is two different measurements and
+    the focused one is the tighter.
+
+    Five claims, and none of them names a rule:
+
+    * **the winner's cell is not the loser's colour** — the statement §2.2
+      asks for, as a relation rather than as a hex;
+    * **the loser's cell is the separator's colour** — which is what "dimmed"
+      concretely means here: the losing count reads as part of the figure, like
+      the hyphen between the pair, rather than as a second number competing
+      with the first;
+    * **…and dimmer than the row's own plain text**, so "dimmed" is not
+      satisfied by any colour that merely differs;
+    * **the winner is bold and nothing else on the row is** — the second of the
+      two marks §2.2 was amended to require, so the statement survives a
+      terminal or a screenshot that loses the hue;
+    * **every cell clears WCAG AA**, both themes, both focus states.
+
+    Plus the two non-vacuity guards the claims need: the two sides' colours
+    differ from each other (otherwise "coloured by side" says nothing), and the
+    rows' TEXT is unchanged from what Slice 1 left — the marking added no
+    letter, marker or word, which is §2.2's fifth criterion.
+    """
+    ledger = _marking_ledger(tmp_path, name=f"row-marking-{theme}.yaml")
+
+    async with _viewer_in_theme(ledger, theme).run_test(
+        size=_PANEL_TERMINAL_SIZE
+    ) as pilot:
+        await pilot.pause()
+        assert pilot.app.theme == theme
+        screen = await _open_detail_for_first_row(pilot)
+        listing = screen.query_one("#transcript-panel-list", ListView)
+
+        # §2.2's fifth criterion: the marking is the ONLY place the row states
+        # the winner — it added no glyph, so the rows read exactly what Slice 1
+        # left them reading.
+        assert _panel_labels(screen) == _MARKING_ROWS
+
+        for focused in (False, True):
+            if focused:
+                await pilot.press("t")
+                await pilot.pause()
+            assert listing.has_focus is focused
+            where = f"{theme}, panel {'focused' if focused else 'blurred'}"
+
+            # The two rows under test are the ones the cursor is NOT on.
+            assert not _is_marked(screen, 1) and not _is_marked(screen, 2), (
+                "rows 1 and 2 must be ordinary rows for this test to be about "
+                "ordinary rows at all"
+            )
+
+            # Mafia win: the winning count is the SECOND of the pair.
+            pre, law_lost, sep, mafia_won = _read_row(screen, 1)
+            assert (law_lost.text, mafia_won.text) == ("1", "3")
+            # Law-abiding win: the winning count is the FIRST of the pair.
+            law_pre, law_won, law_sep, mafia_lost = _read_row(screen, 2)
+            assert (law_won.text, mafia_lost.text) == ("4", "0")
+
+            for winner, loser, separator, prefix in (
+                (mafia_won, law_lost, sep, pre),
+                (law_won, mafia_lost, law_sep, law_pre),
+            ):
+                assert winner.colour != loser.colour, (
+                    f"{where}: both survivor counts came back {winner.colour}, "
+                    "so nothing on the row says which side won"
+                )
+                assert loser.colour == separator.colour, (
+                    f"{where}: the losing count ({loser.colour}) is not dimmed "
+                    f"to the same grey as the separator ({separator.colour}), "
+                    "so it reads as a number in its own right rather than as "
+                    "part of one figure"
+                )
+                assert loser.contrast < prefix.contrast, (
+                    f"{where}: the losing count reads at {loser.contrast:.2f}:1 "
+                    f"against the row's own plain text at "
+                    f"{prefix.contrast:.2f}:1 — it is not DIMMED, merely a "
+                    "different colour"
+                )
+                assert winner.bold, (
+                    f"{where}: the winning count is not bold, so the mark does "
+                    "not survive a terminal or a screenshot that loses colour"
+                )
+                assert _bold_cells([prefix, loser, separator]) == [], (
+                    f"{where}: something other than the winning count came "
+                    "back bold, so weight no longer picks the winner out"
+                )
+                for cell in (prefix, winner, loser, separator):
+                    assert cell.contrast >= _AA_NORMAL_TEXT, (
+                        f"{where}: {cell.text!r} reads at "
+                        f"{cell.contrast:.2f}:1 on {cell.background}, under "
+                        f"WCAG AA's {_AA_NORMAL_TEXT}:1 for normal text"
+                    )
+
+            # ...and the two sides really are two colours, or "the winning
+            # side's colour" would hold on a stylesheet that painted both the
+            # same.
+            assert mafia_won.colour != law_won.colour, (
+                f"{where}: both sides won in {mafia_won.colour}, so a row's "
+                "colour cannot tell a reviewer WHICH side won"
+            )
+
+
+# ---------------------------------------------------------------------------
+# B16.6 Exactly one count is bold on the row the reviewer is on — trap (i)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize("theme", _TRUECOLOUR_THEMES)
+async def test_exactly_one_count_is_bold_on_the_row_the_reviewer_is_on(
+    tmp_path: Path, theme: str
+) -> None:
+    """Functional-spec §2.2's seventh criterion — and trap (i)'s witness.
+
+    On the row the cursor is on, the list repaints everything in its own
+    colours and the two side hues give way, so WEIGHT is the only thing left
+    saying who won. The assertion is therefore **exactly one bold segment**,
+    never "the winner is bold": Textual's `.-highlight` rule sets `text-style`
+    on the `ListItem` and `DOMNode.rich_style` accumulates it down to every
+    `Label` inside, so a stylesheet missing the explicit clears bolds all four
+    segments — and the row still looks right, because the winner is bold too.
+    That is how a first pass shipped this broken, and "the winner is bold"
+    would have passed against it.
+
+    BOTH FOCUS STATES, and that is the half that makes this a witness rather
+    than a formality. `$block-cursor-blurred-text-style` is `none`, so the
+    blurred row inherits nothing and stays at one bold segment whatever the
+    stylesheet does about clearing. Verified by mutation: deleting the clears
+    takes the FOCUSED row from 1 of 4 bold to 4 of 4 on both themes and leaves
+    the blurred row untouched — so a check run only on the blurred row would
+    have passed while the feature was broken.
+
+    The bold segment is identified by the DIGIT it carries, not by its column:
+    the marked game is a Mafia win at ``1-3``, so the mark is on the ``3``, and
+    a rule that bolded the Law-abiding cell instead would be caught rather than
+    counted.
+
+    The cursor is then MOVED with `down` — the reviewer's own action, which is
+    how §2.2's seventh criterion is worded — onto a game the other side won, so
+    the claim is made about both sides' cells and about a row that became
+    marked rather than one that started that way. The row the cursor left is
+    re-read in the same breath: it is ordinary again, and still carries exactly
+    one bold count.
+    """
+    ledger = _row_ledger(
+        tmp_path,
+        {
+            "game-01.txt": _game_with_outcome(
+                1, days=3, law_alive=1, mafia_alive=3, law_killed=2
+            ),
+            "game-02.txt": _game_with_outcome(
+                2, days=2, law_alive=4, mafia_alive=0, law_killed=1, mafia_executed=2
+            ),
+        },
+        name=f"row-weight-{theme}.yaml",
+    )
+
+    async with _viewer_in_theme(ledger, theme).run_test(
+        size=_PANEL_TERMINAL_SIZE
+    ) as pilot:
+        await pilot.pause()
+        assert pilot.app.theme == theme
+        screen = await _open_detail_for_first_row(pilot)
+        listing = screen.query_one("#transcript-panel-list", ListView)
+        assert _panel_labels(screen) == ["01   3d  1-3", "02   2d  4-0"]
+
+        # The row the list marks on arrival, with the panel still blurred.
+        assert _is_marked(screen, 0) and not listing.has_focus
+        assert _bold_cells(_read_row(screen, 0)) == ["3"], (
+            f"{theme}, panel blurred: the marked row must carry exactly one "
+            "bold segment — the winning side's count"
+        )
+
+        # ...and with the panel FOCUSED, which is the state Textual's own
+        # `.-highlight` rule bolds the whole row in. THIS is trap (i)'s
+        # witness: without the explicit clears every segment comes back bold
+        # here, and only here.
+        await pilot.press("t")
+        await pilot.pause()
+        assert listing.has_focus and _is_marked(screen, 0)
+        assert _bold_cells(_read_row(screen, 0)) == ["3"], (
+            f"{theme}, panel FOCUSED: more than the winning count is bold on "
+            "the marked row, so weight discriminates nothing — and the row "
+            "still looks right, because the winner is bold too. This is trap "
+            "(i): Textual's `.-highlight` sets `text-style` on the ListItem "
+            "and it accumulates down to every Label inside"
+        )
+
+        # The reviewer moves down a row, onto a game the OTHER side won.
+        await pilot.press("down")
+        await pilot.pause()
+        assert listing.index == 1 and _is_marked(screen, 1)
+        assert _bold_cells(_read_row(screen, 1)) == ["4"], (
+            f"{theme}, panel FOCUSED: the row the cursor moved onto does not "
+            "carry exactly one bold count — the winning Law-abiding one"
+        )
+
+        # ...and the row it left is ordinary again, still marked by weight.
+        assert not _is_marked(screen, 0)
+        assert _bold_cells(_read_row(screen, 0)) == ["3"], (
+            f"{theme}: moving the cursor off a row cost it its weight mark"
+        )
+
+
+# ---------------------------------------------------------------------------
+# B16.7 Both counts stay legible on the row the reviewer is on — trap (ii)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize("theme", _TRUECOLOUR_THEMES)
+async def test_both_counts_stay_legible_on_the_row_the_reviewer_is_on(
+    tmp_path: Path, theme: str
+) -> None:
+    """Functional-spec §2.2's eighth criterion — and trap (ii)'s witness.
+
+    The mark is Textual's own accent blue, kept exactly as it ships, and the
+    dimmed cell's colour is a BLEND rather than a colour (`auto 60%`), so it
+    re-resolves against that blue into a washed blue-white — and it can beat
+    the highlight override on selector specificity while doing it. Verified by
+    mutation, twice: dropping the explicit colour from the non-winner rules
+    drops the losing count to 2.57:1 on textual-dark focused, and stripping the
+    panel's id out of the override selectors (leaving every declaration exactly
+    as written) restores the whole broken table, with the WINNER at 1.03:1 on
+    textual-light focused — a digit that is not there.
+
+    So the assertion is over EVERY segment of the marked row, not only the
+    dimmed one: both failures are reached from different directions and the
+    second lands on the winner. 3:1 is the floor tech-spec §2.3's risk table
+    commits to; the measured tightest reading is 3.78:1.
+
+    Both focus states, because the two marks are different colours
+    (`$block-cursor-background` when the panel has focus,
+    `$block-cursor-blurred-background` when it does not) and §2.2 asks for the
+    counts to stay readable in both.
+
+    The mark is proved to be PAINTED rather than assumed: the marked row's
+    background must differ from an ordinary row's. Without that guard a
+    regression that stopped highlighting altogether would sail through — every
+    cell would be ordinary text on the ordinary surface, and would clear 3:1
+    comfortably.
+
+    The parity row is the one the cursor starts on deliberately: ``2-2`` is
+    where colour has least to work with, so it is the hardest row to keep both
+    counts legible on.
+    """
+    ledger = _row_ledger(
+        tmp_path,
+        {
+            "game-01.txt": _game_with_outcome(
+                1, days=3, law_alive=2, mafia_alive=2, law_killed=2
+            ),
+            "game-02.txt": _game_with_outcome(
+                2, days=2, law_alive=4, mafia_alive=0, law_killed=1, mafia_executed=2
+            ),
+        },
+        name=f"row-legible-{theme}.yaml",
+    )
+
+    async with _viewer_in_theme(ledger, theme).run_test(
+        size=_PANEL_TERMINAL_SIZE
+    ) as pilot:
+        await pilot.pause()
+        assert pilot.app.theme == theme
+        screen = await _open_detail_for_first_row(pilot)
+        listing = screen.query_one("#transcript-panel-list", ListView)
+
+        def check(row: int, where: str) -> None:
+            assert _is_marked(screen, row), f"{where}: row {row} is not marked"
+            marked = _read_row(screen, row)
+            ordinary = _read_row(screen, 1 - row)
+            assert marked[0].background != ordinary[0].background, (
+                f"{where}: the marked row's background ({marked[0].background}) "
+                f"is the ordinary row's ({ordinary[0].background}) — the cursor "
+                "is not being painted at all, so the readings below are not "
+                "measuring legibility against a mark"
+            )
+            for cell in marked:
+                assert cell.contrast >= _LEGIBLE_ON_THE_MARK, (
+                    f"{where}: {cell.text!r} reads at {cell.contrast:.2f}:1 "
+                    f"({cell.colour} on {cell.background}), under the "
+                    f"{_LEGIBLE_ON_THE_MARK}:1 floor — something on the row "
+                    "the reviewer is sitting on has been dimmed away"
+                )
+
+        # The blurred mark first, then the focused one, then the focused mark
+        # on a row the cursor was moved onto (and whose winner is the other
+        # side).
+        assert not listing.has_focus
+        check(0, f"{theme}, panel blurred")
+
+        await pilot.press("t")
+        await pilot.pause()
+        assert listing.has_focus
+        check(0, f"{theme}, panel FOCUSED")
+
+        await pilot.press("down")
+        await pilot.pause()
+        assert listing.index == 1
+        check(1, f"{theme}, panel FOCUSED, cursor moved down")
+
+
+# ---------------------------------------------------------------------------
+# B16.8 The parity row — where both counts are the same number
+# ---------------------------------------------------------------------------
+
+
+async def test_a_two_all_row_still_says_which_side_won(tmp_path: Path) -> None:
+    """Functional-spec §2.2's third criterion — the case the whole spec is for.
+
+    Most of the preserved corpus ends at two Law-abiding Citizens against two
+    Mafiosos — the parity the Mafia win on — so this is not an edge case, it is
+    the commonest row there is: ``2-2``, where the two digits say nothing at
+    all by themselves and the marking is the whole of the statement. (Said as
+    a proportion rather than as a count, per this spec's standing rule: no new
+    corpus-count literal goes into code or tests, because the ones already in
+    the repo have rotted.)
+
+    Two rows of it in one mount — one ordinary, one under the cursor —
+    **because the two rows say it differently**, and asserting only one would
+    miss the degradation §2.2 is careful about. On the ordinary row, exactly
+    one of the two 2s is coloured (and it is bold). On the marked row the
+    colours are gone — both 2s come back the same colour, which is the mark's
+    own foreground — and exactly one is bold. Two marks, then one, never none.
+
+    ONE THEME, deliberately, and this is the one test in the group that does
+    not sweep: every claim here is about WHICH cell is marked, not about what
+    the mark looks like, and B16.5 and B16.6 already carry the palette sweep
+    for the colour and the weight respectively. A second mount would buy a
+    second reading of a structural fact.
+    """
+    ledger = _row_ledger(
+        tmp_path,
+        {
+            "game-01.txt": _game_with_outcome(
+                1, days=3, law_alive=2, mafia_alive=2, law_killed=2
+            ),
+            "game-02.txt": _game_with_outcome(
+                2, days=3, law_alive=2, mafia_alive=2, law_killed=2
+            ),
+        },
+        name="row-parity.yaml",
+    )
+
+    async with _viewer_in_theme(ledger, "textual-dark").run_test(
+        size=_PANEL_TERMINAL_SIZE
+    ) as pilot:
+        await pilot.pause()
+        screen = await _open_detail_for_first_row(pilot)
+        listing = screen.query_one("#transcript-panel-list", ListView)
+        assert _panel_labels(screen) == ["01   3d  2-2", "02   3d  2-2"]
+
+        await pilot.press("t")
+        await pilot.pause()
+        assert listing.has_focus
+
+        # The ordinary row: two identical digits, and only one of them coloured.
+        assert not _is_marked(screen, 1)
+        _, law, _, mafia = _read_row(screen, 1)
+        assert law.text == mafia.text == "2", "this is not the parity case"
+        assert law.colour != mafia.colour, (
+            "both 2s came back the same colour on an ordinary row, so a "
+            "reviewer looking at the commonest shape in the whole corpus "
+            "cannot tell who won"
+        )
+        assert _bold_cells(_read_row(screen, 1)) == ["2"], (
+            "exactly one of the two 2s must be bold on an ordinary row"
+        )
+        assert mafia.bold and not law.bold, (
+            "the Mafia won this game, so it is the SECOND 2 that must be "
+            "marked — a marking on the wrong cell is worse than none"
+        )
+
+        # The marked row: the colours give way, and weight carries it alone.
+        assert _is_marked(screen, 0)
+        _, law_marked, _, mafia_marked = _read_row(screen, 0)
+        assert law_marked.text == mafia_marked.text == "2"
+        assert law_marked.colour == mafia_marked.colour, (
+            "the marked row kept the two side hues, which measured 1.53:1 and "
+            "1.03:1 against the cursor's own background during technical "
+            "design — the row must repaint in the mark's own foreground"
+        )
+        assert _bold_cells(_read_row(screen, 0)) == ["2"], (
+            "the row the reviewer is sitting on has lost its colours to the "
+            "mark, so weight is the only statement left — and exactly one of "
+            "the two 2s must carry it"
+        )
+        assert mafia_marked.bold and not law_marked.bold, (
+            "the surviving mark is on the wrong 2: the Mafia won this game"
+        )
+
+
+# ---------------------------------------------------------------------------
+# B16.9 The list and the reading view speak the same two colours
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize("theme", _TRUECOLOUR_THEMES)
+async def test_the_list_and_the_reading_view_speak_the_same_two_colours(
+    tmp_path: Path, theme: str
+) -> None:
+    """Functional-spec §2.2's fourth criterion — the crossing between two views.
+
+    "A game that reads red in the list opens into a transcript whose winning
+    side's lines are red." That is the criterion most likely to rot silently:
+    the two ends live in two different stylesheets on two different screens,
+    nothing forces them to move together, and retuning either one leaves a
+    perfectly green suite and a reviewer who has to learn the colours twice.
+
+    So the test crosses the seam the reviewer does — it reads the winning cell
+    off an ordinary row, then opens a game by the real key route and resolves
+    the reading view's own speech style for the same side — and compares the
+    two RESOLVED colours rather than the two rules. Rules can be written
+    differently and mean the same thing; a reviewer only ever sees what they
+    resolve to.
+
+    Both sides, both themes, and the non-vacuity guard both halves need: the
+    two sides' colours must differ from each other, or "the same colour at both
+    ends" would hold on a stylesheet that painted everything one hue.
+    """
+    ledger = _marking_ledger(tmp_path, name=f"row-crossing-{theme}.yaml")
+
+    async with _viewer_in_theme(ledger, theme).run_test(
+        size=_PANEL_TERMINAL_SIZE
+    ) as pilot:
+        await pilot.pause()
+        assert pilot.app.theme == theme
+        screen = await _open_detail_for_first_row(pilot)
+        assert _panel_labels(screen) == _MARKING_ROWS
+
+        # The two winning cells, off the two ordinary rows.
+        in_the_list = {
+            KIND_SPEECH_MAFIA: _read_row(screen, 1)[3].colour,
+            KIND_SPEECH_LAW_ABIDING: _read_row(screen, 2)[1].colour,
+        }
+        assert in_the_list[KIND_SPEECH_MAFIA] != in_the_list[KIND_SPEECH_LAW_ABIDING]
+
+        # ...and now the reviewer opens a game, by the key route they use.
+        await _highlight_game(pilot, 0)
+        await pilot.press("enter")
+        await pilot.pause()
+        assert isinstance(pilot.app.screen, TranscriptScreen)
+        in_the_game = pilot.app.screen._kind_styles()
+
+        for kind, side in (
+            (KIND_SPEECH_MAFIA, "Mafia"),
+            (KIND_SPEECH_LAW_ABIDING, "Law-abiding"),
+        ):
+            spoken = in_the_game[kind].color
+            assert spoken is not None, (
+                f"{theme}: the reading view resolved no colour for {side} "
+                "speech, so the equality below is vacuous"
+            )
+            assert _hex(spoken) == in_the_list[kind], (
+                f"{theme}: a {side} win is marked {in_the_list[kind]} in the "
+                f"list but that side speaks in {_hex(spoken)} inside the game "
+                "— the reviewer has to learn the pair twice, and "
+                "functional-spec §2.2's crossing is broken"
+            )
+
+
+# ---------------------------------------------------------------------------
+# B16.10 - B16.13 The strip says what it is and what its columns are (spec
+#         045, Slice 3) — the panel gained a header line naming its three
+#         columns and a title naming the strip itself.
+#
+#         BOTH ARE STRUCTURE, NOT DECORATION, and that is why they are
+#         asserted here rather than left to the eye. The header is a `Static`
+#         SIBLING of the `ListView`, not a row inside it: a non-`ListItem`
+#         child would shift every `Selected.index` by one and open the game
+#         ABOVE the row a reviewer picked (`ListView.watch_index` and
+#         `highlighted_child` both `assert isinstance(..., ListItem)`).
+#         Functional-spec §2.3 states the consequence a reviewer can see —
+#         "every one of the run's games is still listed; the header has taken
+#         the place of no game" — so B16.11 asserts exactly that, over a
+#         scrolled 50-game list.
+#
+#         ALIGNMENT IS ASSERTED AS SCREEN COLUMNS, never by eye and never by
+#         comparing the header string against the module constant that builds
+#         it (which would pass on any pair of strings derived from the same
+#         typo). B16.10 reads the laid-out x of each survivor cell back off
+#         the widgets Textual actually positioned and requires the header's
+#         `L`, `-` and `M` to land on those same columns. The game number and
+#         the day count have no widget of their own to measure — they are two
+#         fields inside ONE prefix `Label`, for the reason B16.2's docstring
+#         gives — so those two columns are asserted as slices of the twelve
+#         character columns the grid fixes.
+#
+#         `display`, NOT `visible`. §2.6's last criterion withholds the header
+#         from a run with no preserved games, and a header that merely painted
+#         blank would still spend the panel's first row. B16.12 therefore pins
+#         the header at zero height with the note sitting in the row it would
+#         have occupied, which is the difference the two mechanisms make.
+# ---------------------------------------------------------------------------
+
+# The header line as a reviewer reads it. Asserted BY VALUE rather than
+# imported from the module that renders it — the convention this file follows
+# for every user-visible string (see `_EMPTY_LEDGER_MESSAGE`) — so the test
+# pins what reaches the screen instead of restating the constant that produced
+# it.
+_PANEL_HEADER_LINE = " #  day  L-M"
+
+# The two columns of the twelve-column grid (tech-spec §2.4) that live INSIDE
+# the row's single prefix segment, and therefore have no laid-out widget of
+# their own: the game number in 0-1 and the day count in 4-6. The three
+# survivor columns (9, 10, 11) are three separate widgets and are asserted as
+# screen positions instead.
+_NUMBER_COLUMNS = slice(0, 2)
+_DAY_COLUMNS = slice(4, 7)
+
+# The size of the run B16.11 scrolls. Functional-spec §2.3's second criterion
+# is stated about "a 50-game list" specifically, because that is the size at
+# which the panel raises a scrollbar and the list genuinely scrolls beneath the
+# header; a run that fits on screen could not fail the claim.
+_SCROLLING_RUN_SIZE = 50
+
+
+def _panel_header(screen: DetailScreen) -> Static:
+    """The panel's column header widget — the list's SIBLING, not a row in it."""
+    return screen.query_one("#transcript-panel-header", Static)
+
+
+def _header_line(screen: DetailScreen) -> str:
+    """The header's text, read off its renderable — NOT through markup.
+
+    The same route :func:`_segment_text` takes, and for the same reason: the
+    header's alignment lives in its **spaces**, including a leading one, and a
+    round trip through ``str()`` and ``Text.from_markup`` is free to lose them.
+    The renderable's type is asserted for the same reason too — it pins a
+    measured fact about the installed Textual (8.2.4), that a ``Static`` hands
+    back Textual's own ``Content``.
+    """
+    rendered = _panel_header(screen).render()
+    assert isinstance(rendered, Content), (
+        f"the column header rendered a {type(rendered).__name__}, expected Content"
+    )
+    return rendered.plain
+
+
+def _panel_row_cells(screen: DetailScreen) -> list[list[Label]]:
+    """Every panel row's segment WIDGETS, in column order.
+
+    The widget-level sibling of :func:`_panel_row_segments`: that helper reads
+    what a row says, this one keeps the laid-out widgets so their screen
+    positions can be compared against the header's.
+    """
+    listing = screen.query_one("#transcript-panel-list", ListView)
+    return [list(item.query(Label)) for item in listing.query(ListItem)]
+
+
+# ---------------------------------------------------------------------------
+# B16.10 The header sits over the columns it names
+# ---------------------------------------------------------------------------
+
+
+async def test_the_header_labels_sit_over_the_columns_they_name(
+    tmp_path: Path,
+) -> None:
+    """Functional-spec §2.3's first criterion — and that it is *aligned*.
+
+    "A header line names the three columns" is only worth anything if each
+    label is over the column it names, so the claim is asserted as an equality
+    between screen positions Textual actually laid out: the header's ``L``,
+    ``-`` and ``M`` must land in the very columns the row's Law-abiding cell,
+    separator and Mafia cell occupy. Nothing here compares the header against
+    the constant that builds it — two strings derived from one typo would
+    agree with each other and disagree with the rows.
+
+    Two rows, and deliberately the same extremes B16.2 uses: the narrowest and
+    the widest thing each field can hold (``01`` against ``50``, a one-digit
+    day count against a two-digit one). One header line stands over fifty
+    varied rows in the real panel, so alignment that held only for the
+    narrowest row would be no alignment at all.
+    """
+    ledger = _row_ledger(
+        tmp_path,
+        {
+            "game-01.txt": _game_with_outcome(
+                1, days=3, law_alive=2, mafia_alive=2, law_killed=2
+            ),
+            "game-50.txt": _game_with_outcome(
+                50, days=12, law_alive=2, mafia_alive=2, law_killed=2
+            ),
+        },
+        name="header-grid.yaml",
+    )
+
+    app = LedgerViewerApp(path=ledger)
+    async with app.run_test(size=_PANEL_TERMINAL_SIZE) as pilot:
+        await pilot.pause()
+        screen = await _open_detail_for_first_row(pilot)
+
+        # The header is there, and it says the three column names.
+        assert _panel_header(screen).display is True
+        assert _header_line(screen) == _PANEL_HEADER_LINE
+
+        header_x = _panel_header(screen).region.x
+        rows = _panel_row_cells(screen)
+        assert rows, "no rows to align the header against — the claim is vacuous"
+
+        for row, cells in zip(_panel_labels(screen), rows, strict=True):
+            prefix, law_abiding, separator, mafia = cells
+            # The two lines start in the same column, which is what the number
+            # and day-count slices below are measured against.
+            assert prefix.region.x == header_x, (
+                f"the header starts at column {header_x} and row {row!r} at "
+                f"{prefix.region.x} — the two lines are not on one grid"
+            )
+            # ...and each survivor label is over the cell it names.
+            for glyph, cell in (
+                ("L", law_abiding),
+                ("-", separator),
+                ("M", mafia),
+            ):
+                assert header_x + _PANEL_HEADER_LINE.index(glyph) == cell.region.x, (
+                    f"the header's {glyph!r} sits in column "
+                    f"{header_x + _PANEL_HEADER_LINE.index(glyph)} but the cell "
+                    f"it names is in column {cell.region.x} on row {row!r} — a "
+                    "reviewer reading down from the label lands on the wrong "
+                    "number"
+                )
+
+        # The number and the day count, which share the ONE prefix widget and
+        # so have no column of their own to measure: the header names columns
+        # 0-1 and 4-6, and that is exactly where every row puts its two values.
+        assert (
+            _PANEL_HEADER_LINE[_NUMBER_COLUMNS],
+            _PANEL_HEADER_LINE[_DAY_COLUMNS],
+        ) == (" #", "day")
+        assert [
+            (row[_NUMBER_COLUMNS], row[_DAY_COLUMNS]) for row in _panel_labels(screen)
+        ] == [("01", " 3d"), ("50", "12d")]
+
+
+# ---------------------------------------------------------------------------
+# B16.11 The header stays put, and it costs no game its row
+# ---------------------------------------------------------------------------
+
+
+async def test_the_header_survives_a_scroll_and_displaces_no_game(
+    tmp_path: Path,
+) -> None:
+    """Functional-spec §2.3's second and third criteria, on a scrolled list.
+
+    The two halves are one claim, and it is the claim the header's *structure*
+    was chosen for: the header is a sibling of the ``ListView`` rather than a
+    row in it, so the list scrolls **beneath** it. A header that had been made
+    a list row would look right on the first screenful and then either scroll
+    away with the rows or sit at index 0 having taken game 1's place — and
+    would shift every ``Selected.index`` by one, so a reviewer would open the
+    game above the one they picked.
+
+    So: walk to the bottom of a 50-game run by the reviewer's own keys, then
+    assert the header has not moved a column, that it is still clear of the
+    list rather than painted over it, and that every one of the run's games is
+    still listed, in order. The scroll offset is asserted to have actually
+    moved first — a list that never scrolled would satisfy all of the above
+    while proving nothing.
+    """
+    games = {
+        f"game-{number:02d}.txt": _game_with_outcome(
+            number, days=3, law_alive=2, mafia_alive=2, law_killed=2
+        )
+        for number in range(1, _SCROLLING_RUN_SIZE + 1)
+    }
+    expected_rows = [f"{number:02d}   3d  2-2" for number in range(1, len(games) + 1)]
+    ledger = _row_ledger(tmp_path, games, name="header-scroll.yaml")
+
+    app = LedgerViewerApp(path=ledger)
+    async with app.run_test(size=_PANEL_TERMINAL_SIZE) as pilot:
+        await pilot.pause()
+        screen = await _open_detail_for_first_row(pilot)
+
+        listing = screen.query_one("#transcript-panel-list", ListView)
+        before = _panel_header(screen).region
+        assert listing.scroll_offset.y == 0
+
+        # Down to the last game, by the keys a reviewer presses.
+        await _highlight_game(pilot, len(games) - 1)
+
+        # The list really did scroll, so everything below is a claim about a
+        # scrolled list rather than about a list that fitted on screen.
+        assert listing.scroll_offset.y > 0
+
+        # §2.3: the header is still there, in the same place, saying the same
+        # thing — and still clear of the list rather than painted over its top
+        # row.
+        header = _panel_header(screen)
+        assert header.display is True
+        assert header.region == before
+        assert _header_line(screen) == _PANEL_HEADER_LINE
+        assert not header.region.overlaps(listing.region), (
+            "the header is overlapping the list, so whatever it covers is a "
+            "game row the reviewer cannot see"
+        )
+
+        # §2.3's third criterion: the header has taken the place of no game.
+        assert _panel_labels(screen) == expected_rows
+        assert len(_panel_labels(screen)) == len(games)
+
+        # ...and the last one is genuinely on screen at the bottom of the
+        # walk, so no row was lost off the end either.
+        last_row = listing.query(ListItem).nodes[-1]
+        assert listing.content_region.contains_region(last_row.region)
+
+
+# ---------------------------------------------------------------------------
+# B16.12 A run with no preserved games shows its note and no header
+# ---------------------------------------------------------------------------
+
+
+async def test_a_run_with_no_games_shows_the_note_and_no_header(
+    tmp_path: Path,
+) -> None:
+    """Functional-spec §2.6's last criterion — the note, and nothing added to it.
+
+    "The same 'no transcripts for this run' note as before, with no day counts,
+    survivor counts or header." All three absences are asserted, because the
+    criterion is that this state gained *nothing*: the note reads exactly as it
+    did before the spec, and there are no rows to carry numbers.
+
+    The header's absence is pinned as **taking no row**, not as blank text. The
+    two ways to hide a Textual widget are not the same thing here: ``visible =
+    False`` would leave the header occupying the panel's first row, so the note
+    would start one line lower and the panel would carry a blank strip above
+    it. Measured on the installed Textual (8.2.4), the header's own ``region``
+    collapses to nothing under **either** mechanism, so its height is not what
+    tells them apart — the NOTE's position is. Hence the third assertion: the
+    note sits in the panel's own first inner row, the row the header would
+    otherwise have spent.
+    """
+    ledger = _write_ledger(
+        tmp_path,
+        _doc_with_transcript_dir("2026-06-19", None),
+        name="header-empty.yaml",
+    )
+
+    app = LedgerViewerApp(path=ledger)
+    async with app.run_test(size=_PANEL_TERMINAL_SIZE) as pilot:
+        await pilot.pause()
+        screen = await _open_detail_for_first_row(pilot)
+
+        header = _panel_header(screen)
+        listing = screen.query_one("#transcript-panel-list", ListView)
+        empty = screen.query_one("#transcript-panel-empty", Static)
+        panel = screen.query_one("#transcript-panel", Vertical)
+
+        # No header — and gone from the layout, not merely painted blank.
+        assert header.display is False
+        assert header.region.height == 0
+        assert empty.region.y == panel.content_region.y, (
+            "the note does not start at the panel's first inner row, so the "
+            "hidden header is still spending one"
+        )
+
+        # The note, exactly as it was before this spec...
+        assert listing.display is False
+        assert empty.display is True
+        assert plain_text(empty) == _NO_TRANSCRIPTS_MESSAGE
+        # ...and no day counts and no survivor counts, there being no rows.
+        assert _panel_labels(screen) == []
+
+
+# ---------------------------------------------------------------------------
+# B16.13 The strip carries its own name
+# ---------------------------------------------------------------------------
+
+
+async def test_the_games_strip_is_titled_games(tmp_path: Path) -> None:
+    """Functional-spec §2.3's fourth criterion — the strip reads "Games".
+
+    A column of bare numbers is not identifiable as a list of games without it,
+    which is why the title was added alongside the header rather than instead
+    of it: the header names the columns, the title names the strip. The word is
+    the one the footer's key hint already spends on this panel, so the key that
+    moves focus here and the name of what it lands on agree.
+
+    **Asserted in both states, and that pins a reading of an ambiguity.** The
+    functional spec does not settle whether the title survives a run with no
+    preserved games: §2.3's criterion is written about "the strip the games are
+    listed in", while §2.6's last criterion enumerates what such a run must not
+    show — "no day counts, survivor counts or header" — and does not name the
+    title either way. The implementation sets it **unconditionally**, reading
+    §2.6's list as exhaustive in form and §2.3's purpose as keeping the strip
+    identifiable, and this test pins that reading. A future decision to drop
+    the title from an empty run is therefore a deliberate change to this
+    assertion rather than a surprise failure.
+
+    One mount, two runs in one ledger — the same shape the no-layout-shift test
+    uses, and for the same reason: the claim is about both states, and opening
+    them in one session is what makes it one claim.
+    """
+    ledger = _write_ledger(
+        tmp_path,
+        _doc_with_transcript_dir("2026-09-14", _ROW_RUN_ID),
+        _doc_with_transcript_dir("2026-09-15", None),
+        name="header-title.yaml",
+    )
+    _write_run_transcripts(
+        ledger,
+        _ROW_RUN_ID,
+        {
+            "game-01.txt": _game_with_outcome(
+                1, days=3, law_alive=2, mafia_alive=2, law_killed=2
+            )
+        },
+    )
+
+    app = LedgerViewerApp(path=ledger)
+    async with app.run_test(size=_PANEL_TERMINAL_SIZE) as pilot:
+        await pilot.pause()
+
+        # The run WITH games.
+        screen = await _open_detail_for_row(pilot, 0)
+        assert _panel_labels(screen) == ["01   3d  2-2"]
+        assert screen.query_one("#transcript-panel", Vertical).border_title == "Games"
+
+        # Back out to the table, then the run WITHOUT games: still the Games
+        # strip, still named — see the docstring for why that is the pinned
+        # reading rather than the only possible one.
+        await pilot.press("escape")
+        await pilot.pause()
+        assert isinstance(app.screen, LedgerTableScreen)
+        screen = await _open_detail_for_row(pilot, 1)
+        assert _panel_labels(screen) == []
+        assert screen.query_one("#transcript-panel-empty", Static).display is True
+        assert screen.query_one("#transcript-panel", Vertical).border_title == "Games"
+
+
+# ---------------------------------------------------------------------------
+# B16.14 A game with no recorded ending is painted as nobody's win
+# ---------------------------------------------------------------------------
+
+# The fixture's four rows, in order. Row 0 is the row the list marks the moment
+# the screen opens, and it is DELIBERATELY the dash row: that is how the same
+# claim gets made about the dash in all three of its states — marked and
+# blurred, marked and focused, and ordinary — out of ONE mount, and how the two
+# winning rows stay ordinary throughout so the side hues can be harvested off
+# them in whichever state the winner-less row is being read in.
+_NO_WINNER_ROWS = ["01   2d  —", "02   3d  1-3", "03   2d  4-0", "04"]
+
+# The two rows that DO have a winner. The cursor starts on row 0 and is only
+# ever moved to row 3, so neither of these is ever marked.
+_MAFIA_WIN_ROW = 1
+_LAW_WIN_ROW = 2
+
+# The two rows no side won: functional-spec §2.4's dash row, and the
+# bare-number row a file the derivation can read nothing out of falls back to.
+_DASH_ROW = 0
+_NO_SUMMARY_ROW = 3
+
+
+@pytest.mark.parametrize("theme", _TRUECOLOUR_THEMES)
+async def test_a_row_with_no_recorded_ending_is_painted_as_nobodys_win(
+    tmp_path: Path, theme: str
+) -> None:
+    """Functional-spec §2.4's second criterion — no part of such a row is
+    coloured as a winning side.
+
+    **This test exists because that criterion was true and unwitnessed.** The
+    dash row's structure and text are pinned by B16.4 and its colour by
+    nothing; every colour reading in B16.5-B16.9 is taken on a row that HAS a
+    winner. Mutation-proven before it was written: giving the dash cell the
+    classes ``g-cell g-mafia`` — so a game with no recorded ending renders its
+    dash in the Mafia hue and silently claims a Mafia win — left this whole
+    module green at 183 passed.
+
+    **Both halves of the winner's mark, because the row has two ways to lie.**
+    On an ordinary row the winner is stated by COLOUR and by WEIGHT together;
+    on the row the reviewer is sitting on the cursor repaints every cell in its
+    own foreground and WEIGHT carries the winner alone (see the highlighted-row
+    note in ``DetailScreen.DEFAULT_CSS``). So a bold dash under the cursor
+    claims a winner exactly as loudly as a red one does off it, and both states
+    are asserted. That is why the dash row is the one the cursor starts on.
+
+    **Stated so that EITHER side fails it**, not only the side a mutation
+    happened to pick: the two hues are read off the two winning rows in the
+    same state and the dash must be neither of them. And stated positively as
+    well — the dash is the same dim the losing count and the separator take —
+    so a third colour that is neither side's and not the dim either fails here
+    rather than slipping between the two inequalities.
+
+    **The bare-number row rides along**, in the same mount and for no extra
+    cost. It is not the subject of an acceptance criterion (spec §4.2 says so:
+    zero preserved games are in that state), but it is the only other row shape
+    no side won, it is a live defensive path, and the claim being made is the
+    same one.
+
+    Both truecolour themes, for the reason the B16.5-B16.9 banner gives: the
+    hues, the dim and the cursor's own foreground are different colours on each,
+    so "is not a side hue" is a different measurement on each.
+    """
+    ledger = _row_ledger(
+        tmp_path,
+        {
+            "game-01.txt": _game_with_no_ending(1, days=2),
+            "game-02.txt": _game_with_outcome(
+                2, days=3, law_alive=1, mafia_alive=3, law_killed=2
+            ),
+            "game-03.txt": _game_with_outcome(
+                3, days=2, law_alive=4, mafia_alive=0, law_killed=1, mafia_executed=2
+            ),
+            "game-04.txt": _TRANSCRIPT_BODY,
+        },
+        name=f"row-no-winner-{theme}.yaml",
+    )
+
+    async with _viewer_in_theme(ledger, theme).run_test(
+        size=_PANEL_TERMINAL_SIZE
+    ) as pilot:
+        await pilot.pause()
+        assert pilot.app.theme == theme
+        screen = await _open_detail_for_first_row(pilot)
+        listing = screen.query_one("#transcript-panel-list", ListView)
+        assert _panel_labels(screen) == _NO_WINNER_ROWS
+
+        def check(row: int, where: str) -> None:
+            """No segment of row ``row`` carries a side's colour or its weight."""
+            # The two side hues and the dim, harvested in THIS state — the
+            # panel's background differs between focus states, and both
+            # variables in play are blends rather than colours, so a hue read
+            # in one state is not the hue in the other.
+            assert not _is_marked(screen, _MAFIA_WIN_ROW)
+            assert not _is_marked(screen, _LAW_WIN_ROW)
+            _, _, separator, mafia_winner = _read_row(screen, _MAFIA_WIN_ROW)
+            _, law_winner, _, _ = _read_row(screen, _LAW_WIN_ROW)
+
+            # The guards the claim below needs to mean anything: the two sides
+            # really are two colours, the dim is a third, and a winning cell
+            # really is bold — so "not a side colour, not bold" is a claim this
+            # row can fail rather than one the palette satisfies for it.
+            assert mafia_winner.colour != law_winner.colour, (
+                f"{where}: both sides won in {mafia_winner.colour}, so "
+                "'not a side colour' is one inequality rather than two"
+            )
+            assert separator.colour not in (mafia_winner.colour, law_winner.colour), (
+                f"{where}: the dim ({separator.colour}) is already one of the "
+                "side hues, so nothing below distinguishes a dash from a winner"
+            )
+            assert mafia_winner.bold and law_winner.bold, (
+                f"{where}: a winning count is not bold, so 'not bold' says "
+                "nothing about a row with no winner"
+            )
+
+            cells = _read_row(screen, row)
+            for cell in cells:
+                for hue, side in (
+                    (mafia_winner.colour, "Mafia"),
+                    (law_winner.colour, "Law-abiding"),
+                ):
+                    assert cell.colour != hue, (
+                        f"{where}: {cell.text!r} is painted {cell.colour} — the "
+                        f"{side} colour — on a game that recorded NO ending, so "
+                        "the row claims a side won when none did"
+                    )
+            assert _bold_cells(cells) == [], (
+                f"{where}: {_bold_cells(cells)} came back bold on a game that "
+                "recorded no ending. Weight is the other half of the winner's "
+                "mark, and the only half left on the row the reviewer is "
+                "sitting on, so a bold segment here claims a winner too"
+            )
+
+        # The dash row as the list marks it on arrival, panel still blurred...
+        assert _is_marked(screen, _DASH_ROW) and not listing.has_focus
+        check(_DASH_ROW, f"{theme}, the dash row MARKED, panel blurred")
+        check(_NO_SUMMARY_ROW, f"{theme}, the bare-number row, ordinary")
+
+        # ...and with the panel FOCUSED, which is the state Textual's own
+        # `.-highlight` rule bolds the whole row in and where the winner is
+        # carried by weight alone.
+        await pilot.press("t")
+        await pilot.pause()
+        assert listing.has_focus and _is_marked(screen, _DASH_ROW)
+        check(_DASH_ROW, f"{theme}, the dash row MARKED, panel FOCUSED")
+
+        # The reviewer moves off it, down to the bare-number row, so the dash
+        # row can be read as an ORDINARY row — the state where the side hues
+        # are actually painted and a mis-classed dash shows its colour.
+        for _ in range(_NO_SUMMARY_ROW):
+            await pilot.press("down")
+        await pilot.pause()
+        assert listing.index == _NO_SUMMARY_ROW
+        assert not _is_marked(screen, _DASH_ROW)
+        check(_DASH_ROW, f"{theme}, the dash row ordinary, panel FOCUSED")
+        check(_NO_SUMMARY_ROW, f"{theme}, the bare-number row MARKED, panel FOCUSED")
+
+        # ...and said positively, which is what rules out a third colour: on an
+        # ordinary row the dash is the same dim the losing count and the
+        # separator take. Nothing is lifted out of this row, because there is
+        # nothing on it to lift.
+        _, _, separator, _ = _read_row(screen, _MAFIA_WIN_ROW)
+        _, dash = _read_row(screen, _DASH_ROW)
+        assert dash.text == "—", "this is not the dash row"
+        assert dash.colour == separator.colour, (
+            f"{theme}: the dash reads {dash.colour} where the dimmed "
+            f"separator reads {separator.colour} — it is picked out from the "
+            "rest of the row, on a game that recorded no ending at all"
         )

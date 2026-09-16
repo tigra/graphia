@@ -83,6 +83,8 @@ from graphia.eval_ledger import (
     SEARCH_SCOPE_ALL,
     TableModel,
     TranscriptEntry,
+    WINNER_LAW_ABIDING,
+    WINNER_MAFIA,
     build_table_model,
     find_matches,
     list_transcripts,
@@ -182,9 +184,11 @@ class DetailScreen(Screen):
     together. ``Header``/``Footer`` stay *outside* the split, so the framing
     above is unchanged. The panel's width is a fixed column count rather than
     ``auto`` precisely so the details pane keeps the same width whether a run has
-    transcripts or not; a run with none keeps the panel in place and shows the
-    plain :data:`_NO_TRANSCRIPTS_MESSAGE` with its list hidden — the same
-    hide-list/show-message posture the removed spec-017 list screen used.
+    transcripts or not; a run with none keeps the panel in place — titled, since
+    it is still the Games strip — and shows the plain
+    :data:`_NO_TRANSCRIPTS_MESSAGE` with its list *and its column header* hidden
+    (functional-spec §2.6), the same hide-list/show-message posture the removed
+    spec-017 list screen used.
 
     **The two panes are one keypress apart** (spec 037): ``right`` focuses the
     panel's list, ``left`` focuses the record scroller, and each focuses one
@@ -281,20 +285,299 @@ class DetailScreen(Screen):
        FIXED count, deliberately, not `auto`: the details pane must keep an
        identical width across runs that have transcripts and runs that do not,
        and a width never derived from content guarantees that by construction.
-       22 columns fits the `game-01` … `game-50` label shape with room for a
-       border. (A future matchup-titled label shape would own this number.)
 
-       The 22 is INCLUSIVE of the border below (Textual sizes border-box), so the
-       usable label area inside is ~20 columns. */
+       22 columns fits the row grid spec 045 put on every row — twelve columns of
+       number, day count and final standings:
+
+           cols   0 1 | 2 3 | 4 5 6 | 7 8 | 9 |10 |11
+           header   # |     | d a y |     | L | - | M
+           row    0 1 |     |   3 d |     | 2 | - | 2
+
+       …the number right-aligned in two columns, a two-column gap, the day count
+       right-aligned in three, another two-column gap, then the three survivor
+       columns (Law-abiding, separator, Mafia).
+
+       **22 still holds, and with room to spare.** It used to fit the `game-01` …
+       `game-50` label shape — 7 columns of content. The new row is 12, and the
+       22 is INCLUSIVE of the border below (Textual sizes border-box), so the
+       usable area inside is ~20: 12 for the grid, with 8 columns of slack that
+       absorb the vertical scrollbar a 50-game run raises (measured: the row area
+       narrows 20 → 18 when it appears, and the grid is untouched). Dropping the
+       `game-` prefix is what paid for the three new numbers — the width did not
+       have to move, which is functional-spec §2.1's last requirement. */
     #transcript-panel {
         width: 22;
         height: 1fr;
         border: round $panel;
     }
 
+    /* THE COLUMN HEADER (spec 045, functional-spec §2.3) — one line naming the
+       three columns, above the rows and outside the list.
+
+       A SIBLING OF THE `ListView`, NOT A ROW IN IT, and that is structural
+       rather than stylistic. `ListView.watch_index` and
+       `ListView.highlighted_child` both `assert isinstance(..., ListItem)`, and
+       `ListView.Selected.index` is a position in `_nodes` — so a non-`ListItem`
+       child would shift every selection index by one and break
+       `DetailScreen`'s index-parallel `_entries` contract (a reviewer would open
+       the game *above* the row they picked). Textual 8.2.4 offers no sticky-row
+       or table-header affordance on `ListView` either. As a sibling the list
+       scrolls independently *beneath* the header, so §2.3's "it sits at the top
+       of the list and stays there" holds BY CONSTRUCTION — nothing watches the
+       scroll offset and there is no header row to lose a game behind.
+
+       `height: 1` — one line, stated rather than left to `Static`'s `height:
+       auto`, so the line the header spends comes out of the LIST (which is
+       `height: 1fr` and absorbs whatever the header leaves) and never out of the
+       panel. The panel's own `width: 22` is untouched, which is what keeps the
+       details pane beside it at its measured 78.
+
+       `color: $text-muted` — the same muted grey `#transcript-panel-empty`
+       spends on its "no transcripts" note and `.g-dim` spends on a losing
+       count. A column label is scaffolding, not data: it must not compete with
+       the numbers under it, and it must never be mistaken for a winner's mark.
+
+       ALIGNMENT IS CARRIED BY THE HEADER STRING, not by this rule. Both the
+       header and each row's segments start at the list's own left edge (neither
+       `ListView` nor `ListItem` adds padding on the installed Textual), so
+       :data:`_PANEL_HEADER` lines its three labels up with the row grid by
+       character position alone — see that constant for the grid. A vertical
+       scrollbar (any run over ~20 games) takes its columns from the RIGHT, so
+       the left-anchored grid is unaffected; measured with 50 games, the header's
+       `#`/`day`/`L-M` sit at the same x as the row's number/day/counts with the
+       scrollbar present and absent alike. */
+    #transcript-panel-header {
+        height: 1;
+        width: 1fr;
+        color: $text-muted;
+    }
+
     #transcript-panel-list {
         height: 1fr;
         width: 1fr;
+    }
+
+    /* The row's segment container (spec 045). REQUIRED, not decoration:
+       `Horizontal`'s own default is `height: 1fr`, and a `1fr` child inside a
+       `ListItem` — which `ListView` sizes `height: auto` — resolves against the
+       LIST's height rather than the row's. Measured without this rule: every
+       `ListItem` came out 22 rows tall, so five games filled a 110-line
+       scroller. A row is exactly one line; say so. */
+    #transcript-panel-list .g-row {
+        height: 1;
+    }
+
+    /* ------------------------------------------------------------------
+       THE WINNING SIDE (spec 045, functional-spec §2.2) — ORDINARY ROWS.
+       Four rules, and between them they are the only place a row says who won:
+       no letter, marker or word names the winning side anywhere else on it.
+
+       THE TWO HUES ARE NOT THIS PANEL'S INVENTION. They are spec 038's two side
+       colours, verbatim — `$text-error` = Mafia, `$text-primary` = Law-abiding,
+       the same pair the `TranscriptScreen` rules below give a speaker's name and
+       the words they say. That identity IS the requirement, not a nicety:
+       functional-spec §2.2 asks that a game which reads red in the list open
+       into a transcript whose winning side's lines are red, so the reviewer
+       learns the pair once and carries it across the two views. Spec 038 did not
+       choose the pair freely either — only five theme variables clear 4.5:1 WCAG
+       AA on BOTH builtin themes, three are spent there on structure, and these
+       two are what was left. Changing either here silently breaks the crossing.
+       Verified by resolving both ends rather than by reading both rules: a
+       winning Mafia cell and `transcript--speech-mafia` come back as the same
+       hex (`#d17e92` dark, `#7a273c` light), and a winning Law-abiding cell and
+       `transcript--speech-law-abiding` likewise (`#57a5e2` / `#002d4f`).
+
+       COLOUR **AND** WEIGHT ON THE WINNER, which functional-spec §2.2 was
+       amended to require during technical design. Two marks rather than one, so
+       the statement survives a terminal, a screenshot or a colour-vision
+       deficiency that loses the hue — and so that the highlighted-row overrides,
+       where the cursor's own blue repaints the hues away, can degrade to weight
+       alone instead of to nothing.
+
+       THE LOSER IS DIMMED, not merely left alone: `$text-muted` is the same
+       muted grey `#transcript-panel-empty` below already spends on its "no
+       transcripts" note, so the panel dims on one variable throughout. The
+       separator carries `g-dim` too — it is nobody's cell — which keeps the pair
+       reading as one figure with one number lifted out of it rather than as two
+       competing numbers.
+
+       `.g-dim` AND `.g-law`/`.g-mafia` NEVER MEET ON ONE WIDGET — `_panel_row`
+       gives a cell its side class only when that side won — so these four rules
+       cannot race on specificity, and a row with no winner at all (no ending
+       recorded, a runaway, the retained draw) dims both cells by construction.
+
+       Measured on an ordinary row, per cell, by reading the resolved style back
+       through `Screen.get_style_at` and scoring foreground against that cell's
+       own background with the WCAG relative-luminance formula. AN ORDINARY ROW
+       HAS TWO BACKGROUNDS, not one, and both are recorded because the panel is
+       read in both states: `ListView:focus` adds `background-tint: $foreground
+       5%`, which lifts `$surface` from `#1e1e1e` to `#272727` on `textual-dark`
+       and drops it from `#d8d8d8` to `#cecece` on `textual-light`.
+
+                        panel focused        panel blurred
+         dark   Law      5.61:1               6.26:1
+         dark   Mafia    5.06:1               5.64:1
+         dark   loser    6.28:1               6.77:1
+         light  Law      8.97:1               9.90:1
+         light  Mafia    6.11:1               6.75:1
+         light  loser    4.97:1               5.15:1
+
+       Every one of the twelve clears 4.5:1, so AA holds in both focus states on
+       both builtin themes — the focused column is the tighter of the two and is
+       the one to check against if these rules are ever retuned.
+
+       The loser out-contrasting the winner is not a fault: `$text-muted` is
+       `auto 60%`, a BLEND toward the background's own contrast colour, so it
+       stays legible while still reading as secondary. The winner is
+       discriminated by hue and weight, not by being the brightest thing there.
+
+       WHY CLASSES AND NOT A BAKED STYLE, restated because it is what these rules
+       buy: nothing watches `ListView.index` and no row is regenerated on a
+       keypress — the cascade re-evaluates each cell for free when the row
+       becomes the highlighted one. And, unlike spec 038's `_kind_styles` recipe
+       (which resolves `get_component_rich_style` once at compose time and goes
+       stale), these cells also re-resolve when the THEME changes under an open
+       screen. Verified: switching `app.theme` with a `DetailScreen` mounted
+       repaints the winner from the dark `$text-primary` to the light one. */
+    #transcript-panel-list .g-pre {
+        color: $text;
+    }
+
+    #transcript-panel-list .g-dim {
+        color: $text-muted;
+    }
+
+    #transcript-panel-list .g-law {
+        color: $text-primary;
+        text-style: bold;
+    }
+
+    #transcript-panel-list .g-mafia {
+        color: $text-error;
+        text-style: bold;
+    }
+
+    /* ------------------------------------------------------------------
+       THE WINNING SIDE (spec 045, functional-spec §2.2) — THE HIGHLIGHTED ROW.
+
+       THE MARK ITSELF IS UNTOUCHED, deliberately. `ListView` repaints the row
+       the reviewer is sitting on in the cursor's own colours, and these rules
+       leave that repaint exactly as Textual ships it — no `$block-cursor-*`
+       variable is redefined and no background is overridden here. Six candidate
+       background overrides were measured during technical design; only `$panel`
+       cleared 4.5:1 on both builtin themes, and it sits so close to `$surface`
+       that the highlight stops being visible at all. So the blue stays, the two
+       side hues give way on this ONE row, and THE WINNER IS CARRIED BY WEIGHT
+       ALONE — which is the whole reason the ordinary-row rules above spend
+       `bold` on the winner as well as colour. Two marks on every other row, one
+       mark here, never none.
+
+       WHY THE HUES CANNOT SIMPLY BE LEFT TO STAND. The side colours are set on
+       the `Label`, and Textual's `.-highlight` rules are set on the `ListItem`
+       above it, so the Label's own colour SURVIVES the repaint and is then read
+       against the accent blue. Measured that way the pair stops being colours:
+       Mafia 1.53:1 on textual-dark focused and 1.03:1 on textual-light focused —
+       the second of those is a digit that is not there. Every segment therefore
+       takes `$block-cursor-foreground`, which is the foreground the mark was
+       designed around; it is `auto 87%`, so it re-resolves against whichever of
+       the two cursor backgrounds it actually lands on and tracks the theme for
+       free (measured white-ish on three states, near-black on textual-light
+       blurred, where the blurred mark is pale).
+
+       TRAP (i) — `.-highlight` BOLDS THE WHOLE ROW. Textual's focused rule sets
+       `text-style: $block-cursor-text-style`, which is `bold` on both builtin
+       themes, and `DOMNode.rich_style` ACCUMULATES `text-style` down the
+       ancestor chain (`style += styles.text_style`, root to leaf) — so the
+       ListItem's bold reaches every Label inside it. Without an explicit clear,
+       all four segments come back bold, weight discriminates nothing, and THE
+       ROW STILL LOOKS RIGHT, because the winner is bold too. That is how a
+       first pass shipped this broken. Verified by mutation: deleting the two
+       `text-style: not bold` declarations below takes the focused row from 1 of
+       4 segments bold to 4 of 4 on both themes (the blurred row is unaffected —
+       `$block-cursor-blurred-text-style` is `none` — so this is a
+       FOCUSED-STATE failure, and a check run only on the blurred row would miss
+       it entirely). The test that pins this must assert EXACTLY ONE bold
+       segment, never "the winner is bold".
+
+       TRAP (ii) — `$text-muted` IS `auto 60%`, A BLEND AND NOT A COLOUR. It
+       re-resolves against whatever background it lands on, so on the accent
+       blue it becomes a washed blue-white rather than a grey. Two independent
+       things are needed to keep it from winning, and both are applied below:
+
+         · AN EXPLICIT COLOUR ON THE DIMMED CELL. Verified by mutation: dropping
+           `color: $block-cursor-foreground` from the non-winner rules lets
+           `.g-dim` through and the losing count reads 2.57:1 / 5.42:1 / 4.58:1 /
+           4.22:1 across the four states — the first of those under AA's 3:1
+           floor, on the state a reviewer looks at most.
+         · THE `#transcript-panel-list` ID IN EVERY OVERRIDE SELECTOR. Textual
+           scores id-count FIRST, so an override written `ListItem.-highlight
+           .g-dim` (0 ids, 2 classes, 1 type) LOSES to the ordinary
+           `#transcript-panel-list .g-dim` (1 id, 1 class, 0 types) no matter how
+           many classes it carries. Verified by mutation: stripping just the id
+           out of the four selectors below, leaving every declaration as
+           written, restores the whole broken table — winner 1.53:1 / 4.12:1 /
+           1.03:1 / 4.09:1, loser 2.57:1. With the id the rules score (1, 2, 1)
+           and win cleanly.
+
+       BOTH SELECTOR FORMS ARE WRITTEN OUT — the plain one and the `:focus` one.
+       The mark differs between them (`$block-cursor-background`, solid primary,
+       when the panel has focus; `$block-cursor-blurred-background`, primary at
+       30% over the surface, when it does not) and functional-spec §2.2 asks for
+       the winner to be identifiable in BOTH, so both are stated rather than left
+       to one rule that happens to cover the pair.
+
+       `.g-dim` NEVER MEETS `.g-law`/`.g-mafia` ON ONE WIDGET — the invariant the
+       ordinary-row note above records — so the non-winner rule and the winner
+       rule below cannot both match the same segment, and neither depends on
+       source order to settle it.
+
+       Measured per cell through `Screen.get_style_at` on the COMPOSITED buffer
+       (the real stacked background, `ListView:focus`'s `background-tint`
+       included) and scored with the WCAG relative-luminance formula, with the
+       theme set BEFORE the screen composed:
+
+                          winner (bold)   every other segment
+         dark   focused    3.78:1          3.78:1
+         dark   blurred    9.59:1          9.59:1
+         light  focused    7.83:1          7.83:1
+         light  blurred    7.73:1          7.73:1
+
+       Every segment on the highlighted row now reads at the SAME ratio, which
+       is the point rather than an accident: nothing is dimmed away on the row
+       being read, all eight readings clear 3:1, and the winner is left as the
+       only thing on the row with weight. The dash row (`2d —`) and the
+       bare-number row keep exactly this treatment with nothing bold at all,
+       because neither carries a side class — no side won, so nothing is marked.
+
+       textual-ansi is NOT covered by these numbers: converting ANSI defaults to
+       truecolour for scoring reports black-on-black, which is the measurement
+       lying rather than a terminal behaviour. It is established instead by spec
+       038's categorical route, and the finding is recorded in spec 045's
+       `technical-considerations.md` §2.3. */
+    #transcript-panel-list > ListItem.-highlight .g-pre,
+    #transcript-panel-list > ListItem.-highlight .g-sep,
+    #transcript-panel-list > ListItem.-highlight .g-dim {
+        color: $block-cursor-foreground;
+        text-style: not bold;
+    }
+
+    #transcript-panel-list > ListItem.-highlight .g-law,
+    #transcript-panel-list > ListItem.-highlight .g-mafia {
+        color: $block-cursor-foreground;
+        text-style: bold;
+    }
+
+    #transcript-panel-list:focus > ListItem.-highlight .g-pre,
+    #transcript-panel-list:focus > ListItem.-highlight .g-sep,
+    #transcript-panel-list:focus > ListItem.-highlight .g-dim {
+        color: $block-cursor-foreground;
+        text-style: not bold;
+    }
+
+    #transcript-panel-list:focus > ListItem.-highlight .g-law,
+    #transcript-panel-list:focus > ListItem.-highlight .g-mafia {
+        color: $block-cursor-foreground;
+        text-style: bold;
     }
 
     #transcript-panel-empty {
@@ -393,26 +676,73 @@ class DetailScreen(Screen):
             with VerticalScroll(id="detail-scroll"):
                 yield Static(render_detail(self._record), id="detail-body")
             with Vertical(id="transcript-panel"):
+                # The column header (spec 045) — BEFORE the list and OUTSIDE
+                # it. A `ListView` child must be a `ListItem` (see
+                # :func:`_panel_row`), so the header is the list's sibling; the
+                # list then scrolls beneath it and the header stays put with
+                # nothing watching the scroll offset.
+                yield Static(_PANEL_HEADER, id="transcript-panel-header")
                 # One row per transcript, in the order the pure layer sorted
                 # them (game-01 … game-NN). Empty when the run has none —
                 # on_mount then hides this and shows the message instead.
+                #
+                # Each row is a SEGMENTED `ListItem` (spec 045) — see
+                # :func:`_panel_row` for the grid and for why the segments are
+                # separate widgets rather than one styled string.
                 yield ListView(
-                    *(ListItem(Label(entry.label)) for entry in self._entries),
+                    *(_panel_row(entry) for entry in self._entries),
                     id="transcript-panel-list",
                 )
                 yield Static(_NO_TRANSCRIPTS_MESSAGE, id="transcript-panel-empty")
         yield Footer()
 
     def on_mount(self) -> None:
-        """Show the panel's list (or the "no transcripts" note), then focus details.
+        """Title the panel, show its list (or the note), then focus details.
 
-        Two jobs. First the hide-list/show-message posture reused verbatim from
+        Three jobs. First the strip **names itself** (spec 045, functional-spec
+        §2.3): ``#transcript-panel`` takes the ``border_title`` ``"Games"`` —
+        the same word the ``t`` and ``right`` key hints in ``BINDINGS`` already
+        spend on this panel ("Games", shown in the Footer), so the key that
+        moves focus here and the name of what it lands on agree. A strip of bare
+        numbers is otherwise unidentifiable as a list of games.
+
+        **In Python, not CSS**, because ``border_title`` is a widget *attribute*
+        rather than a style. Checked against the installed Textual (8.2.4):
+        ``StylesBase`` carries ``border_title_align``, ``border_title_color``,
+        ``border_title_background`` and ``border_title_style`` — CSS
+        ``border-title-align`` / ``title-color`` / ``title-background`` /
+        ``title-text-style`` — every one of which *paints* a title that already
+        exists, and none of which can supply its text. The attribute is the only
+        route, and it is the idiom ``ui/app.py``'s ``on_mount`` already uses
+        (``private.border_title = "Whispers (only you see this)"``): query the
+        widget, assign the attribute.
+
+        It costs **no geometry**. ``#transcript-panel`` already carries ``border:
+        round $panel`` in every state — the focus indication depends on it — so
+        the title paints into a border line that is drawn either way. Measured
+        with the title set: the panel is still 22 columns outside and the details
+        pane beside it still 78, with and without transcripts alike.
+
+        The title is set **unconditionally**, ahead of the branch below. A run
+        with no preserved games is still the Games strip; functional-spec §2.6's
+        last criterion withholds the *header*, the day counts and the survivor
+        counts from such a run — not the panel's own name.
+
+        Second the hide-list/show-message posture reused verbatim from
         ``TranscriptListScreen`` — with the one deliberate difference that
         this does **not** focus the list. The deleted screen's ``on_mount`` ended
         in ``listing.focus()``; that must **not** be carried over, because here
         the list is a *pane*, not the whole screen.
 
-        Second, **focus starts on the details pane** (functional-spec §2.2), so
+        **The column header hides with the list**, in that same branch rather
+        than in a second decision of its own — one condition cannot drift out of
+        step with itself, and a header left standing over a hidden list would
+        label columns that are not there (functional-spec §2.6's last criterion:
+        the note, and no header). ``display = False``, the same mechanism the
+        list uses, so the header's one line returns to the panel instead of
+        sitting blank above the note.
+
+        Third, **focus starts on the details pane** (functional-spec §2.2), so
         the reviewer's first ``up``/``down`` scrolls the figures they came to
         read. Textual's auto-focus happens to land there already — ``#detail-scroll``
         is the first focusable widget in ``compose`` order — but that is
@@ -421,9 +751,15 @@ class DetailScreen(Screen):
         failing at the point of the change. Naming the target makes the guarantee
         explicit and independent of composition order.
         """
+        panel = self.query_one("#transcript-panel", Vertical)
+        header = self.query_one("#transcript-panel-header", Static)
         listing = self.query_one("#transcript-panel-list", ListView)
         empty = self.query_one("#transcript-panel-empty", Static)
+        # Unconditional, and before the branch: the strip is the Games strip
+        # whether or not this run kept any (see the docstring).
+        panel.border_title = "Games"
         if not self._entries:
+            header.display = False
             listing.display = False
             empty.display = True
         else:
@@ -514,6 +850,171 @@ class DetailScreen(Screen):
 # plain message, not an error (functional-spec §2.2), mirroring the table
 # screen's #empty-state posture.
 _NO_TRANSCRIPTS_MESSAGE = "No transcripts for this run."
+
+
+# ===========================================================================
+# The transcript panel's row (spec 045) — how a game says its own shape
+# ===========================================================================
+
+# THE row grid — twelve columns, and the one place their widths live. The header
+# line above the rows aligns to this same grid:
+#
+#     cols   0 1 | 2 3 | 4 5 6 | 7 8 | 9 |10 |11
+#     header   # |     | d a y |     | L | - | M
+#     row    0 1 |     |   3 d |     | 2 | - | 2
+#
+# The number is right-aligned in two columns so `01` and `50` share a right edge,
+# and the day count right-aligned in three so `3d` and `12d` do too. The
+# two-column gaps are what keep three abutting numbers legible as three numbers.
+_ROW_NUMBER_WIDTH = 2
+_ROW_DAY_WIDTH = 3
+_ROW_GAP = "  "
+
+# The header line above the rows (spec 045, functional-spec §2.3) — the one
+# place the three columns are named, and the only labelling this panel carries:
+# no legend, no help text, and no explanation of the two side colours.
+#
+# It is DERIVED from the grid constants above rather than typed as a literal, so
+# the header cannot drift out of alignment when a width changes: `#` is
+# right-aligned in the number's two columns (over the number's last digit, which
+# is where `01` and `50` share their right edge), `day` fills the day count's
+# three, and `L-M` occupies the three survivor columns one for one. Twelve
+# characters, exactly the row's twelve.
+#
+# Rendered as a plain `Static` that is a SIBLING of the list — never a row in it
+# — for the `_nodes` reason spelled out in :func:`_panel_row` and in the
+# `#transcript-panel-header` CSS rule.
+_PANEL_HEADER = (
+    "#".rjust(_ROW_NUMBER_WIDTH)
+    + _ROW_GAP
+    + "day".rjust(_ROW_DAY_WIDTH)
+    + _ROW_GAP
+    + "L-M"
+)
+
+# The stem prefix the eval harness gives every preserved game (`game-01.txt`),
+# and the one thing a row DROPS. Functional-spec §2.1 requires the number to
+# stand alone: the word "game" on every row of a list of games is dead weight,
+# and the five columns it frees are exactly what the three new numbers spend.
+_GAME_LABEL_PREFIX = "game-"
+
+# What a row shows where the survivor counts would be when the game recorded no
+# ending at all (functional-spec §2.4). A single em dash, and deliberately NOT a
+# pair of numbers: a `0-0` there would read as genuine final standings.
+_NO_STANDINGS = "—"
+
+# The separator between the two survivor counts. A plain hyphen, so the pair
+# reads as one figure (`2-2`) rather than as two unrelated digits.
+_STANDINGS_SEPARATOR = "-"
+
+
+def _panel_row(entry: TranscriptEntry) -> ListItem:
+    """Build one game's row in the transcript panel — ``01   3d  2-2``.
+
+    Three numbers beside the game's number (spec 045): the Days it played, and
+    the Law-abiding and Mafia players still alive when it ended. Three row
+    shapes, which are three genuinely different things to say:
+
+    * **The game has a recorded ending** — number, day count, both counts:
+      ``01   3d  2-2``.
+    * **The game played Days but recorded no ending** (functional-spec §2.4) —
+      number, day count, and :data:`_NO_STANDINGS` where the counts would be:
+      ``03   2d  —``. A handful of the preserved games are like this; they hit
+      the Day cap of their era and their text simply stops.
+    * **The file yields nothing at all** (missing, unreadable, empty, truncated)
+      — the number alone. :func:`~graphia.eval_ledger.summarise_game` returns
+      ``None`` there, and :func:`~graphia.eval_ledger.read_transcript` already
+      returns ``""`` on any ``OSError``, so an unreadable file arrives here as a
+      plain ``summary is None`` with no error handling of its own.
+
+    **Why segments rather than one styled string** (tech-spec §2.3). Spec 038's
+    recipe bakes resolved Rich styles into a :class:`~rich.text.Text` at compose
+    time, and a baked span cannot know whether its row is the highlighted one —
+    Textual's ``ListItem.-highlight`` repaints the whole row in the cursor's own
+    colours, which measured the winner's colour down to 1.53:1. Segments that
+    carry CSS **classes** let the cascade give the highlighted row a different
+    treatment with no watcher and no regeneration per keypress, and they
+    re-resolve on a theme change instead of going stale. Slice 2 adds those
+    rules; **in this slice every class is unstyled**, so each segment inherits
+    the row's own colour and the whole row renders as uniform plain text.
+
+    The classes, and what each is for:
+
+    ===========  =========================================================
+    ``g-row``    the segment container; carries the row's one-line height
+    ``g-pre``    number + day count, the 9 columns before the standings
+    ``g-cell``   a survivor count (or the em dash standing in for the pair)
+    ``g-law``    that cell is the Law-abiding count **and its side won**
+    ``g-mafia``  that cell is the Mafia count **and its side won**
+    ``g-dim``    that cell's side did not win (or no side did)
+    ``g-sep``    the hyphen between the two counts
+    ===========  =========================================================
+
+    A cell carries its side class **only when that side won**, so a row states
+    the winner in exactly one place and nothing else has to be recomputed to
+    find it. A game with no winner at all — no ending recorded, a runaway Day-cap
+    hit, or the retained draw — dims both, because nothing there should look
+    highlighted.
+
+    **The ``Horizontal`` goes inside the ``ListItem``, never beside it.** The
+    panel's ``ListView`` children stay ``ListItem`` and nothing else:
+    ``ListView.watch_index`` and ``ListView.highlighted_child`` both
+    ``assert isinstance(..., ListItem)``, and ``ListView.Selected.index`` is a
+    position in ``_nodes`` — which is precisely what makes
+    :class:`DetailScreen`'s index-parallel ``_entries`` contract resolve a
+    selection back to the right game.
+    """
+    # `removeprefix` rather than a slice, and with a fallback: a label that is
+    # not in the writer's `game-NN` shape at all (or is the bare prefix) keeps
+    # its own text rather than rendering as an empty row.
+    number = entry.label.removeprefix(_GAME_LABEL_PREFIX) or entry.label
+    summary = entry.summary
+    if summary is None:
+        return ListItem(
+            Horizontal(
+                Label(number.rjust(_ROW_NUMBER_WIDTH), classes="g-pre"),
+                classes="g-row",
+            )
+        )
+
+    prefix = (
+        number.rjust(_ROW_NUMBER_WIDTH)
+        + _ROW_GAP
+        + f"{summary.days}d".rjust(_ROW_DAY_WIDTH)
+        + _ROW_GAP
+    )
+    # Both counts are absent together or present together (the pure layer's own
+    # invariant), but the check reads both: half a pair of standings is not a
+    # thing this row knows how to show.
+    if summary.law_abiding is None or summary.mafia is None:
+        return ListItem(
+            Horizontal(
+                Label(prefix, classes="g-pre"),
+                Label(_NO_STANDINGS, classes="g-cell g-dim"),
+                classes="g-row",
+            )
+        )
+
+    # Branching on the pure layer's own constants rather than re-typing
+    # `"mafia"` / `"law_abiding"` here: they are exported for exactly this.
+    law_won = summary.winner == WINNER_LAW_ABIDING
+    mafia_won = summary.winner == WINNER_MAFIA
+    return ListItem(
+        Horizontal(
+            Label(prefix, classes="g-pre"),
+            Label(
+                str(summary.law_abiding),
+                classes="g-cell g-law" if law_won else "g-cell g-dim",
+            ),
+            Label(_STANDINGS_SEPARATOR, classes="g-sep g-dim"),
+            Label(
+                str(summary.mafia),
+                classes="g-cell g-mafia" if mafia_won else "g-cell g-dim",
+            ),
+            classes="g-row",
+        )
+    )
+
 
 # ===========================================================================
 # Transcript syntax highlighting (spec 038) — THE kind → style map.
