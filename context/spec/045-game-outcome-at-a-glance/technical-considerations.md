@@ -1,7 +1,7 @@
 # Technical Specification: Reading a Game's Outcome Without Opening It
 
 - **Functional Specification:** [`functional-spec.md`](./functional-spec.md) (29 acceptance criteria across §2.1–§2.6 — 25 at authoring, +4 from the §2.2/§2.3 amendments made during this technical design)
-- **Status:** Draft
+- **Status:** Completed (verified 2026-09-16)
 - **Author(s):** Alexey Tigarev
 
 > **Every load-bearing claim below was measured, not inferred** — against the installed Textual **8.2.4** / Rich **15.0.0** / Python 3.14, through live `run_test()` sessions, and against the real committed corpus (**583** preserved games in **41** run dirs, 24.5 MB, as of 2026-09-15). Contrast ratios are read back per cell with `Screen.get_style_at` and scored with the WCAG relative-luminance formula. Where a measurement contradicted an assumption of mine, the assumption is corrected here rather than quietly dropped — §2.2 carries three such corrections.
@@ -18,7 +18,7 @@ Two layers, along the seam the viewer already has.
 
 Nothing else moves. No ledger field is added, no transcript is rewritten, no measured run is repeated, no dependency is introduced, and the transcript writer is untouched. The change is display-only, so it is exempt from ADR 011's default-on feature-flag requirement (which exempts "display-only / non-gameplay changes" explicitly).
 
-**No ADR.** The one decision that looks architectural — deriving per-game facts by parsing the preserved corpus rather than recording them in the ledger — has no alternative to weigh: functional-spec §2.5 requires all 583 already-preserved games to carry their numbers with nothing re-run, and only the committed text can supply that. Recording the facts at write time would serve future runs only, and would still need this parser for the corpus. There is no trade-off here to record.
+**No ADR.** The one decision that looks architectural — deriving per-game facts by parsing the preserved corpus rather than recording them in the ledger — has no alternative to weigh: functional-spec §2.5 requires every game already preserved to carry its numbers with nothing re-run, and only the committed text can supply that. Recording the facts at write time would serve future runs only, and would still need this parser for the corpus. There is no trade-off here to record.
 
 ---
 
