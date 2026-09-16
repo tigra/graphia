@@ -11638,3 +11638,174 @@ async def test_the_games_strip_is_titled_games(tmp_path: Path) -> None:
         assert _panel_labels(screen) == []
         assert screen.query_one("#transcript-panel-empty", Static).display is True
         assert screen.query_one("#transcript-panel", Vertical).border_title == "Games"
+
+
+# ---------------------------------------------------------------------------
+# B16.14 A game with no recorded ending is painted as nobody's win
+# ---------------------------------------------------------------------------
+
+# The fixture's four rows, in order. Row 0 is the row the list marks the moment
+# the screen opens, and it is DELIBERATELY the dash row: that is how the same
+# claim gets made about the dash in all three of its states — marked and
+# blurred, marked and focused, and ordinary — out of ONE mount, and how the two
+# winning rows stay ordinary throughout so the side hues can be harvested off
+# them in whichever state the winner-less row is being read in.
+_NO_WINNER_ROWS = ["01   2d  —", "02   3d  1-3", "03   2d  4-0", "04"]
+
+# The two rows that DO have a winner. The cursor starts on row 0 and is only
+# ever moved to row 3, so neither of these is ever marked.
+_MAFIA_WIN_ROW = 1
+_LAW_WIN_ROW = 2
+
+# The two rows no side won: functional-spec §2.4's dash row, and the
+# bare-number row a file the derivation can read nothing out of falls back to.
+_DASH_ROW = 0
+_NO_SUMMARY_ROW = 3
+
+
+@pytest.mark.parametrize("theme", _TRUECOLOUR_THEMES)
+async def test_a_row_with_no_recorded_ending_is_painted_as_nobodys_win(
+    tmp_path: Path, theme: str
+) -> None:
+    """Functional-spec §2.4's second criterion — no part of such a row is
+    coloured as a winning side.
+
+    **This test exists because that criterion was true and unwitnessed.** The
+    dash row's structure and text are pinned by B16.4 and its colour by
+    nothing; every colour reading in B16.5-B16.9 is taken on a row that HAS a
+    winner. Mutation-proven before it was written: giving the dash cell the
+    classes ``g-cell g-mafia`` — so a game with no recorded ending renders its
+    dash in the Mafia hue and silently claims a Mafia win — left this whole
+    module green at 183 passed.
+
+    **Both halves of the winner's mark, because the row has two ways to lie.**
+    On an ordinary row the winner is stated by COLOUR and by WEIGHT together;
+    on the row the reviewer is sitting on the cursor repaints every cell in its
+    own foreground and WEIGHT carries the winner alone (see the highlighted-row
+    note in ``DetailScreen.DEFAULT_CSS``). So a bold dash under the cursor
+    claims a winner exactly as loudly as a red one does off it, and both states
+    are asserted. That is why the dash row is the one the cursor starts on.
+
+    **Stated so that EITHER side fails it**, not only the side a mutation
+    happened to pick: the two hues are read off the two winning rows in the
+    same state and the dash must be neither of them. And stated positively as
+    well — the dash is the same dim the losing count and the separator take —
+    so a third colour that is neither side's and not the dim either fails here
+    rather than slipping between the two inequalities.
+
+    **The bare-number row rides along**, in the same mount and for no extra
+    cost. It is not the subject of an acceptance criterion (spec §4.2 says so:
+    zero preserved games are in that state), but it is the only other row shape
+    no side won, it is a live defensive path, and the claim being made is the
+    same one.
+
+    Both truecolour themes, for the reason the B16.5-B16.9 banner gives: the
+    hues, the dim and the cursor's own foreground are different colours on each,
+    so "is not a side hue" is a different measurement on each.
+    """
+    ledger = _row_ledger(
+        tmp_path,
+        {
+            "game-01.txt": _game_with_no_ending(1, days=2),
+            "game-02.txt": _game_with_outcome(
+                2, days=3, law_alive=1, mafia_alive=3, law_killed=2
+            ),
+            "game-03.txt": _game_with_outcome(
+                3, days=2, law_alive=4, mafia_alive=0, law_killed=1, mafia_executed=2
+            ),
+            "game-04.txt": _TRANSCRIPT_BODY,
+        },
+        name=f"row-no-winner-{theme}.yaml",
+    )
+
+    async with _viewer_in_theme(ledger, theme).run_test(
+        size=_PANEL_TERMINAL_SIZE
+    ) as pilot:
+        await pilot.pause()
+        assert pilot.app.theme == theme
+        screen = await _open_detail_for_first_row(pilot)
+        listing = screen.query_one("#transcript-panel-list", ListView)
+        assert _panel_labels(screen) == _NO_WINNER_ROWS
+
+        def check(row: int, where: str) -> None:
+            """No segment of row ``row`` carries a side's colour or its weight."""
+            # The two side hues and the dim, harvested in THIS state — the
+            # panel's background differs between focus states, and both
+            # variables in play are blends rather than colours, so a hue read
+            # in one state is not the hue in the other.
+            assert not _is_marked(screen, _MAFIA_WIN_ROW)
+            assert not _is_marked(screen, _LAW_WIN_ROW)
+            _, _, separator, mafia_winner = _read_row(screen, _MAFIA_WIN_ROW)
+            _, law_winner, _, _ = _read_row(screen, _LAW_WIN_ROW)
+
+            # The guards the claim below needs to mean anything: the two sides
+            # really are two colours, the dim is a third, and a winning cell
+            # really is bold — so "not a side colour, not bold" is a claim this
+            # row can fail rather than one the palette satisfies for it.
+            assert mafia_winner.colour != law_winner.colour, (
+                f"{where}: both sides won in {mafia_winner.colour}, so "
+                "'not a side colour' is one inequality rather than two"
+            )
+            assert separator.colour not in (mafia_winner.colour, law_winner.colour), (
+                f"{where}: the dim ({separator.colour}) is already one of the "
+                "side hues, so nothing below distinguishes a dash from a winner"
+            )
+            assert mafia_winner.bold and law_winner.bold, (
+                f"{where}: a winning count is not bold, so 'not bold' says "
+                "nothing about a row with no winner"
+            )
+
+            cells = _read_row(screen, row)
+            for cell in cells:
+                for hue, side in (
+                    (mafia_winner.colour, "Mafia"),
+                    (law_winner.colour, "Law-abiding"),
+                ):
+                    assert cell.colour != hue, (
+                        f"{where}: {cell.text!r} is painted {cell.colour} — the "
+                        f"{side} colour — on a game that recorded NO ending, so "
+                        "the row claims a side won when none did"
+                    )
+            assert _bold_cells(cells) == [], (
+                f"{where}: {_bold_cells(cells)} came back bold on a game that "
+                "recorded no ending. Weight is the other half of the winner's "
+                "mark, and the only half left on the row the reviewer is "
+                "sitting on, so a bold segment here claims a winner too"
+            )
+
+        # The dash row as the list marks it on arrival, panel still blurred...
+        assert _is_marked(screen, _DASH_ROW) and not listing.has_focus
+        check(_DASH_ROW, f"{theme}, the dash row MARKED, panel blurred")
+        check(_NO_SUMMARY_ROW, f"{theme}, the bare-number row, ordinary")
+
+        # ...and with the panel FOCUSED, which is the state Textual's own
+        # `.-highlight` rule bolds the whole row in and where the winner is
+        # carried by weight alone.
+        await pilot.press("t")
+        await pilot.pause()
+        assert listing.has_focus and _is_marked(screen, _DASH_ROW)
+        check(_DASH_ROW, f"{theme}, the dash row MARKED, panel FOCUSED")
+
+        # The reviewer moves off it, down to the bare-number row, so the dash
+        # row can be read as an ORDINARY row — the state where the side hues
+        # are actually painted and a mis-classed dash shows its colour.
+        for _ in range(_NO_SUMMARY_ROW):
+            await pilot.press("down")
+        await pilot.pause()
+        assert listing.index == _NO_SUMMARY_ROW
+        assert not _is_marked(screen, _DASH_ROW)
+        check(_DASH_ROW, f"{theme}, the dash row ordinary, panel FOCUSED")
+        check(_NO_SUMMARY_ROW, f"{theme}, the bare-number row MARKED, panel FOCUSED")
+
+        # ...and said positively, which is what rules out a third colour: on an
+        # ordinary row the dash is the same dim the losing count and the
+        # separator take. Nothing is lifted out of this row, because there is
+        # nothing on it to lift.
+        _, _, separator, _ = _read_row(screen, _MAFIA_WIN_ROW)
+        _, dash = _read_row(screen, _DASH_ROW)
+        assert dash.text == "—", "this is not the dash row"
+        assert dash.colour == separator.colour, (
+            f"{theme}: the dash reads {dash.colour} where the dimmed "
+            f"separator reads {separator.colour} — it is picked out from the "
+            "rest of the row, on a game that recorded no ending at all"
+        )
