@@ -1,25 +1,38 @@
-%% Graphia — StateGraph topology and state shape.
-%% Regenerated 2026-09-22 against src/graphia/graph.py (24 nodes, 35 edges,
-%% verified via build_graph(load_config())[0].get_graph()).
-%% The topology half can be re-derived mechanically; the annotations below are
-%% hand-maintained and are the part that goes stale. See backlog: "Nothing keeps
-%% the architecture diagram honest".
-%%
-%% CONTRAST: the node fills below are pale, so the theme is PINNED to `base`
-%% with every text colour set explicitly. Without this, a viewer rendering in a
-%% dark theme paints the edge labels and subgraph titles white — measured at
-%% 1.07-1.11:1 against these fills, i.e. invisible. Node text is #1a1a1a on its
-%% own fill at 15.6-16.2:1, and every border clears 5.8:1, so the diagram reads
-%% the same in a light viewer, a dark viewer, and greyscale print.
-%%
-%%{init: {'theme':'base','themeVariables':{'background':'#ffffff','fontFamily':'ui-sans-serif, system-ui, sans-serif','fontSize':'14px','textColor':'#1a1a1a','primaryTextColor':'#1a1a1a','secondaryTextColor':'#1a1a1a','tertiaryTextColor':'#1a1a1a','lineColor':'#495057','edgeLabelBackground':'#ffffff','labelBackground':'#ffffff','clusterBkg':'#ffffff','clusterBorder':'#495057','titleColor':'#1a1a1a','nodeTextColor':'#1a1a1a'}}}%%
+%%{init: {'theme':'base','themeVariables':{'background':'#ffffff','fontFamily':'ui-sans-serif, system-ui, sans-serif','fontSize':'14px','textColor':'#000000','primaryTextColor':'#000000','secondaryTextColor':'#000000','tertiaryTextColor':'#000000','nodeTextColor':'#000000','titleColor':'#000000','lineColor':'#000000','edgeLabelBackground':'#ffffff','labelBackground':'#ffffff','clusterBkg':'#adb5bd','clusterBorder':'#343a40'}}}%%
 flowchart TB
-    classDef state fill:#fff4e6,stroke:#7a4800,color:#1a1a1a
-    classDef llm fill:#e7f5ff,stroke:#124e7c,color:#1a1a1a
-    classDef router fill:#fff0f6,stroke:#a61e4d,color:#1a1a1a
-    classDef node fill:#ebfbee,stroke:#1b5626,color:#1a1a1a
-    classDef silent fill:#f8f0fc,stroke:#862e9c,color:#1a1a1a
-    classDef terminal fill:#f1f3f5,stroke:#495057,color:#1a1a1a
+    %% Graphia — StateGraph topology and state shape.
+    %% Regenerated 2026-09-22 against src/graphia/graph.py (24 nodes, 35 edges,
+    %% verified via build_graph(load_config())[0].get_graph()).
+    %% The topology half can be re-derived mechanically; the annotations are
+    %% hand-maintained and are the part that goes stale. See backlog: "Nothing
+    %% keeps the architecture diagram honest".
+    %% A BARE "%%" LINE IS NOT A COMMENT HERE - Mermaid renders it as a
+    %% node. Every comment line below carries text for that reason.
+    %% CONTRAST, measured (WCAG relative luminance), all text pure black:
+    %%   black text / black border on every fill .. 16.1-18.3:1
+    %%   node fill on the enclosing grey plate ...... 1.59-1.81:1 (plus a 2px border)
+    %%   black lines and subgraph titles on plate .. 10.1:1
+    %%   plate on the white page .................... 2.07:1
+    %%   The plate is grey-500, not white, because luminance contrast does not
+    %%   separate two pale tints of different hue: against white these fills sat
+    %%   at 1.07-1.11:1 and the boxes had no visible edge at all.
+    %%   The init directive above MUST be line 1 - Mermaid will not accept it
+    %%   behind %% comments. The theme is pinned because anything the renderer
+    %%   paints itself follows the VIEWER's theme otherwise (a dark-mode IDE
+    %%   preview turns the labels light grey).
+    %%   WHAT IS GUARANTEED: classDef emits `color:rgb(0,0,0)!important` and
+    %%   `.node tspan{fill:rgb(0,0,0)!important}`, so all 24 node labels stay
+    %%   black whatever the host stylesheet does. Edge labels and the two
+    %%   subgraph titles are set black via themeVariables but WITHOUT
+    %%   !important, which plain Mermaid gives no way to force. `themeCSS`
+    %%   does not help: it is stripped under the default `strict` security
+    %%   level and silently ignored.
+    classDef state fill:#ffe8cc,stroke:#000000,stroke-width:2px,color:#000000
+    classDef llm fill:#d0ebff,stroke:#000000,stroke-width:2px,color:#000000
+    classDef router fill:#ffdeeb,stroke:#000000,stroke-width:2px,color:#000000
+    classDef node fill:#d3f9d8,stroke:#000000,stroke-width:2px,color:#000000
+    classDef silent fill:#f3d9fa,stroke:#000000,stroke-width:2px,color:#000000
+    classDef terminal fill:#e9ecef,stroke:#000000,stroke-width:2px,color:#000000
 
     subgraph STATE ["GameState (TypedDict, total=False) — one snapshot per super-step"]
         direction LR
@@ -128,3 +141,6 @@ flowchart TB
     CWD -. "winner (if condition met)" .-> SW
     ES -. "phase=end, {messages: [final SystemMessage]}" .-> SM
     MS -. "{messages: [closing story]}" .-> SM
+
+    %% Every link black and 2px - thin grey edges vanish at diagram scale.
+    linkStyle default stroke:#000000,stroke-width:2px
