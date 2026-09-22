@@ -1,4 +1,4 @@
-%%{init: {'theme':'base','themeVariables':{'background':'#ffffff','fontFamily':'ui-sans-serif, system-ui, sans-serif','fontSize':'14px','textColor':'#000000','primaryTextColor':'#000000','secondaryTextColor':'#000000','tertiaryTextColor':'#000000','nodeTextColor':'#000000','titleColor':'#000000','lineColor':'#000000','edgeLabelBackground':'#ffffff','labelBackground':'#ffffff','clusterBkg':'#adb5bd','clusterBorder':'#343a40'}}}%%
+%%{init: {'theme':'base','themeCSS':'span,p,text,tspan{color:#000000!important;fill:#000000!important;}.nodeLabel,.nodeLabel span,.nodeLabel p,.edgeLabel,.edgeLabel span,.edgeLabel p,.cluster-label,.cluster-label span,.cluster-label p,.label,.label span,.label p{color:#000000!important;fill:#000000!important;}','themeVariables':{'background':'#ffffff','fontFamily':'ui-sans-serif, system-ui, sans-serif','fontSize':'14px','textColor':'#000000','primaryTextColor':'#000000','secondaryTextColor':'#000000','tertiaryTextColor':'#000000','nodeTextColor':'#000000','titleColor':'#000000','lineColor':'#000000','edgeLabelBackground':'#ffffff','labelBackground':'#ffffff','clusterBkg':'#adb5bd','clusterBorder':'#343a40'}}}%%
 flowchart TB
     %% Graphia — StateGraph topology and state shape.
     %% Regenerated 2026-09-22 against src/graphia/graph.py (24 nodes, 35 edges,
@@ -20,13 +20,20 @@ flowchart TB
     %%   behind %% comments. The theme is pinned because anything the renderer
     %%   paints itself follows the VIEWER's theme otherwise (a dark-mode IDE
     %%   preview turns the labels light grey).
-    %%   WHAT IS GUARANTEED: classDef emits `color:rgb(0,0,0)!important` and
-    %%   `.node tspan{fill:rgb(0,0,0)!important}`, so all 24 node labels stay
-    %%   black whatever the host stylesheet does. Edge labels and the two
-    %%   subgraph titles are set black via themeVariables but WITHOUT
-    %%   !important, which plain Mermaid gives no way to force. `themeCSS`
-    %%   does not help: it is stripped under the default `strict` security
-    %%   level and silently ignored.
+    %%   TEXT COLOUR NEEDS BOTH MECHANISMS - REMOVING EITHER TURNS IT GREY:
+    %%   1. classDef carries the node labels. Mermaid emits its color: as
+    %%      `color:rgb(0,0,0)!important`, which nothing can override. It does
+    %%      NOT reach edge labels or the two subgraph titles.
+    %%   2. themeCSS (top level, a SIBLING of theme - inside themeVariables it
+    %%      is ignored) carries everything classDef cannot: edge labels and
+    %%      subgraph titles. themeVariables alone sets them black WITHOUT
+    %%      !important, so a dark-mode IDE preview repaints them light grey.
+    %%   DO NOT "SIMPLIFY" THIS BY DELETING themeCSS. mermaid-cli renders with
+    %%   securityLevel:strict, which STRIPS themeCSS and shows no difference,
+    %%   so a local render is not evidence that it does nothing - IDE previews
+    %%   run looser and do apply it. That false reading cost several rounds.
+    %%   Per-node `style` statements are NOT a substitute for classDef here:
+    %%   swapping them in lost the node-label colour.
     classDef state fill:#ffe8cc,stroke:#000000,stroke-width:2px,color:#000000
     classDef llm fill:#d0ebff,stroke:#000000,stroke-width:2px,color:#000000
     classDef router fill:#ffdeeb,stroke:#000000,stroke-width:2px,color:#000000
