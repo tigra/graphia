@@ -68,7 +68,7 @@ LAMBDA_ZIPS   = $(addprefix $(LAMBDA_BUILD)/,$(addsuffix .zip,$(LAMBDA_FNS)))
         wire-env deploy redeploy deploy-stats destroy inspect-diary play play-remote \
         build-lambdas clean-lambdas enable-transaction-search verify-observability \
         create-stats-strategy eval-dialogue repetition-experiment ollama-smoke \
-        blunder-eval view-ledger screenshots clean-transcripts
+        blunder-eval view-ledger screenshots clean-transcripts show-trace
 
 help:
 	@echo "Container image targets:"
@@ -124,6 +124,7 @@ help:
 	@echo ""
 	@echo "Observability verification (live — drives the deployed Runtime):"
 	@echo "  make verify-observability       Drive the deployed Runtime + inspect real CloudWatch telemetry."
+	@echo "  make show-trace                 Render a recorded trace tree from CloudWatch as text. ARGS=\"--list | --session <id> | --trace-id <id> | --days N | --lines N\"."
 	@echo ""
 	@echo "Overrides:"
 	@echo "  CONTAINER=docker|podman  IMAGE=...  TAG=...  PLATFORM=linux/amd64  PORT=..."
@@ -667,3 +668,22 @@ create-stats-strategy:
 # Runtime (GRAPHIA_RUNTIME_URL in .env) and a live SSO session.
 verify-observability:
 	GRAPHIA_LIVE_OBSERVABILITY_TEST=1 uv run pytest tests/test_remote_observability_live.py -s -v
+
+# --- Trace inspection (read-only; costs nothing, drives nothing).
+#
+# Renders a recorded OpenTelemetry trace tree as text, read from the
+# `aws/spans` log group that Transaction Search delivers into. This is the
+# only route to the *in-app* spans: `aws xray batch-get-traces` returns just
+# the platform's AgentCore.Runtime.Invoke root segment, so the LangGraph and
+# Bedrock children look absent when they are not.
+#
+# One remote game is many traces (one per interrupt-resume invocation), tied
+# together by the AgentCore session id. With no args it renders the newest
+# session; `--list` shows every session in the retention window.
+#
+#   make show-trace
+#   make show-trace ARGS="--list"
+#   make show-trace ARGS="--session 20260916T164254-28d26aa5…"
+#   make show-trace ARGS="--trace-id 6aaac8a059af6a212923eacd70d1882d --lines 200"
+show-trace:
+	uv run python -m graphia.tools.show_trace $(ARGS)

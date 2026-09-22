@@ -1,23 +1,37 @@
+%% Graphia — StateGraph topology and state shape.
+%% Regenerated 2026-09-22 against src/graphia/graph.py (24 nodes, 35 edges,
+%% verified via build_graph(load_config())[0].get_graph()).
+%% The topology half can be re-derived mechanically; the annotations below are
+%% hand-maintained and are the part that goes stale. See backlog: "Nothing keeps
+%% the architecture diagram honest".
+%%
+%% CONTRAST: the node fills below are pale, so the theme is PINNED to `base`
+%% with every text colour set explicitly. Without this, a viewer rendering in a
+%% dark theme paints the edge labels and subgraph titles white — measured at
+%% 1.07-1.11:1 against these fills, i.e. invisible. Node text is #1a1a1a on its
+%% own fill at 15.6-16.2:1, and every border clears 5.8:1, so the diagram reads
+%% the same in a light viewer, a dark viewer, and greyscale print.
+%%
+%%{init: {'theme':'base','themeVariables':{'background':'#ffffff','fontFamily':'ui-sans-serif, system-ui, sans-serif','fontSize':'14px','textColor':'#1a1a1a','primaryTextColor':'#1a1a1a','secondaryTextColor':'#1a1a1a','tertiaryTextColor':'#1a1a1a','lineColor':'#495057','edgeLabelBackground':'#ffffff','labelBackground':'#ffffff','clusterBkg':'#ffffff','clusterBorder':'#495057','titleColor':'#1a1a1a','nodeTextColor':'#1a1a1a'}}}%%
 flowchart TB
-    classDef state fill:#fff4e6,stroke:#b36b00,color:#333
-    classDef llm fill:#e7f5ff,stroke:#1971c2,color:#333
-    classDef router fill:#fff0f6,stroke:#a61e4d,color:#333
-    classDef node fill:#ebfbee,stroke:#2b8a3e,color:#333
-    classDef terminal fill:#f1f3f5,stroke:#495057,color:#333
+    classDef state fill:#fff4e6,stroke:#7a4800,color:#1a1a1a
+    classDef llm fill:#e7f5ff,stroke:#124e7c,color:#1a1a1a
+    classDef router fill:#fff0f6,stroke:#a61e4d,color:#1a1a1a
+    classDef node fill:#ebfbee,stroke:#1b5626,color:#1a1a1a
+    classDef silent fill:#f8f0fc,stroke:#862e9c,color:#1a1a1a
+    classDef terminal fill:#f1f3f5,stroke:#495057,color:#1a1a1a
 
     subgraph STATE ["GameState (TypedDict, total=False) — one snapshot per super-step"]
         direction LR
         SM["<b>messages</b><br/>list[AnyMessage]<br/><i>reducer: add_messages</i>"]:::state
         SP["<b>players</b><br/>dict[id → PlayerState]<br/><i>replace</i>"]:::state
-        SH["<b>human_id</b>: str<br/><i>replace</i>"]:::state
-        SPH["<b>phase</b>: setup|night|day|end<br/><i>replace</i>"]:::state
-        SC["<b>cycle</b>: int<br/><i>replace</i>"]:::state
-        SNP["<b>night_picks</b><br/>dict[mafia_id → target_id]<br/><i>replace</i>"]:::state
-        SDO["<b>day_order</b>: list[player_id]<br/><i>replace</i>"]:::state
-        SDT["<b>day_turn_index</b>: int<br/><i>replace</i>"]:::state
-        SDR["<b>day_rounds</b>: int<br/><i>replace</i>"]:::state
-        SDV["<b>day_votes_called</b>: int<br/><i>replace</i>"]:::state
+        SH["<b>human_id</b>, <b>human_role</b>: str<br/><i>replace</i>"]:::state
+        SPH["<b>phase</b>: setup|night|day|end<br/><b>cycle</b>: int<br/><i>replace</i>"]:::state
+        SNP["<b>night_picks</b>, <b>night_round</b>,<br/><b>night_mafia_order</b>, <b>night_pointer_index</b>,<br/><b>night_round_picks</b>, <b>night_rounds_log</b>,<br/><b>night_law_order</b><br/><i>multi-round pointing (spec 015)</i>"]:::state
+        SDO["<b>day_order</b>, <b>day_turn_index</b>,<br/><b>day_rounds</b>, <b>day_votes_called</b>,<br/><b>day_votes_initiated</b>, <b>day_turn_error</b><br/><i>replace</i>"]:::state
         SAV["<b>active_vote</b>: ActiveVote|None<br/><i>{initiator, target,<br/>ballots, pending}</i>"]:::state
+        SPR["<b>private_thoughts</b><br/>dict[id → list[ThoughtRecord]]<br/><b>private_diaries</b><br/>dict[id → list[DiaryRecord]]<br/><i>never public — see silent nodes</i>"]:::state
+        SHB["<b>human_votes_called</b>, <b>human_ballots_cast</b>,<br/><b>human_night_attempts</b>, <b>human_night_successes</b>,<br/><b>night_victim_count</b>, <b>execution_count</b><br/><i>career/eval counters</i>"]:::state
         SKL["<b>kill_log</b><br/>list[KillRecord]<br/><i>reducer: operator.add</i>"]:::state
         SW["<b>winner</b>: law_abiding|mafia|draw|None<br/><i>replace</i>"]:::state
     end
@@ -27,71 +41,90 @@ flowchart TB
     subgraph GRAPH ["StateGraph(GameState) — compiled with SqliteSaver(.graphia/checkpoints/&lt;thread_id&gt;.sqlite)"]
         direction TB
         GST([START]):::terminal --> CN["<b>collect_name</b><br/><i>interrupt(kind=name)</i>"]:::node
-        CN --> GR["<b>generate_roster</b><br/><i>Haiku → Roster (6 distinct names);<br/>retry once on ValidationError</i>"]:::node
-        GR --> AR["<b>assign_roles</b><br/><i>seeded shuffle:<br/>2×Mafia + 5×Law-abiding</i>"]:::node
-        AR --> IR["<b>introduce_roster</b><br/><i>public Moderator line</i>"]:::node
+        CN --> GR["<b>generate_roster</b><br/><i>get_small() → Roster;<br/>N distinct names (7 AI at the<br/>6+2 default, CR 007)</i>"]:::node
+        GR --> AR["<b>assign_roles</b><br/><i>shuffle + deal:<br/>num_mafia × Mafia +<br/>num_citizens × Law-abiding<br/>(default 2 + 6);<br/>emits a career event</i>"]:::node
+        AR --> GP["<b>generate_personas</b><br/><i>get_persona_model(temp) → Persona,<br/>ONE CALL PER AI PLAYER, SEQUENTIAL —<br/>each sees the personas already written<br/>so the next is made unlike them<br/>(specs 031 / 034)</i>"]:::silent
+        GP --> IR["<b>introduce_roster</b><br/><i>public Moderator line</i>"]:::node
         IR --> RR["<b>reveal_role</b><br/><i>private message to human</i>"]:::node
         RR --> FN["<b>first_night_mafia_intros</b><br/><i>cycle == 1 only;<br/>private to each Mafia</i>"]:::node
         FN --> NO["<b>night_open</b><br/><i>'Night falls';<br/>cycle++ on re-entry from Day</i>"]:::node
 
-        NO --> RNO{{"<b>route_after_night_open</b><br/>cycle ≥ 20 → draw"}}:::router
-        RNO -- "draw" --> ES["<b>end_screen</b><br/><i>winner line +<br/>kill_log + roster reveal</i>"]:::node
-        RNO -- "else" --> MP["<b>mafia_pointing</b><br/><i>sequential per Mafia;<br/>interrupt(kind=point) for human;<br/>Sonnet → Pointing for AI;<br/>seeded fallback on retry fail</i>"]:::node
+        NO --> RNO{{"<b>route_after_night_open</b><br/>cycle > max_days (default 12)<br/>→ draw (spec 023)"}}:::router
+        RNO -- "runaway → draw" --> ES["<b>end_screen</b><br/><i>winner line +<br/>kill_log + roster reveal</i>"]:::node
+        RNO -- "else" --> MRS["<b>mafia_round_start</b><br/><i>shuffle the pointing order;<br/>opens one consensus round<br/>(spec 015)</i>"]:::node
 
-        MP --> RNK["<b>resolve_night_kill</b><br/><i>strict majority +<br/>random tie-break;<br/>flips is_alive,<br/>kill_log += record (role hidden)</i>"]:::node
-        RNK --> CWN["<b>check_win_night</b>"]:::node
+        MRS --> MPT["<b>mafia_point</b><br/><i>ONE pointer per super-step;<br/>interrupt(kind=point) for human;<br/>get_large() → Pointing for AI</i>"]:::node
+        MPT --> RMP{{"<b>route_after_mafia_point</b><br/>more pointers this round? /<br/>unanimous or round cap (3)?"}}:::router
+        RMP -- "next pointer" --> MPT
+        RMP -- "split, under cap" --> MRS
+        RMP -- "unanimous / cap" --> RNK["<b>resolve_night_kill</b><br/><i>strict majority +<br/>random tie-break;<br/>flips is_alive,<br/>kill_log += record (role hidden)</i>"]:::node
+
+        RNK --> CWN["<b>check_win_night</b><br/><i>pure predicate</i>"]:::node
         CWN --> RWN{{"<b>route_after_win_night</b><br/>winner set?"}}:::router
         RWN -- "yes" --> ES
-        RWN -- "no" --> NC["<b>night_close</b>"]:::node
+        RWN -- "no" --> NC["<b>night_close</b><br/><i>Night 2+: every surviving AI<br/>READS ITS OWN DIARY BACK.<br/>Feeds nothing to the model — kept as<br/>the only live exercise of the remote<br/>read path (Gateway → Lambda → Memory)</i>"]:::silent
 
-        NC --> DO["<b>day_open</b><br/><i>reveal last Night's victim role;<br/>seeded shuffle day_order;<br/>reset turn/round/vote counters</i>"]:::node
-        DO --> DT["<b>day_turn</b><br/><i>one player / super-step;<br/>interrupt(kind=day_turn) for human;<br/>Sonnet → DayAction for AI;<br/>/vote &lt;name&gt; sets active_vote</i>"]:::node
+        NC --> DO["<b>day_open</b><br/><i>reveal last Night's victim role;<br/>shuffle day_order;<br/>reset turn/round/vote counters</i>"]:::node
+        DO --> DT["<b>day_turn</b><br/><i>ONE player per super-step;<br/>interrupt(kind=day_turn) for human;<br/>get_large() → DayAction for AI;<br/>/vote &lt;name&gt; sets active_vote</i>"]:::node
 
-        DT --> RDT{{"<b>route_day_turn_or_vote</b><br/>active_vote set? /<br/>day_rounds ≥ 6?"}}:::router
+        DT --> RDT{{"<b>route_day_turn_or_vote</b><br/>1 active_vote? → vote_prompt<br/>2 day_turn_error? → re-prompt<br/>3 day_rounds ≥ 6? → day_close<br/>4 round just wrapped? → reflect<br/>5 else next speaker"}}:::router
         RDT -- "vote called" --> VP["<b>vote_prompt</b><br/><i>'X has called for a vote<br/>to execute Y'</i>"]:::node
-        RDT -- "more turns" --> DT
-        RDT -- "6-round cap" --> DC["<b>day_close</b><br/><i>'Day ends with no execution'<br/>(suppressed if just executed)</i>"]:::node
+        RDT -- "next speaker / re-prompt" --> DT
+        RDT -- "round wrapped" --> DRR["<b>day_round_reflect</b><br/><i>get_large() → Reflection,<br/>ONE CALL PER SURVIVING AI, SEQUENTIAL.<br/>Writes private_thoughts and NO public<br/>messages — the privacy invariant<br/>(spec 028)</i>"]:::silent
+        RDT -- "6-round cap" --> DC["<b>day_close</b><br/><i>'Day ends with no execution'<br/>(suppressed if just executed);<br/>closing recap</i>"]:::node
+        DRR --> DT
 
-        VP --> CV["<b>collect_votes</b><br/><i>one voter / super-step;<br/>interrupt(kind=vote) for human;<br/>Sonnet → Ballot for AI</i>"]:::node
+        VP --> CV["<b>collect_votes</b><br/><i>ONE voter per super-step;<br/>interrupt(kind=vote) for human;<br/>get_large() → Ballot for AI</i>"]:::node
         CV --> RCV{{"<b>route_collect_votes</b><br/>pending empty?"}}:::router
         RCV -- "more voters" --> CV
         RCV -- "all cast" --> RV["<b>resolve_vote</b><br/><i>strict majority Yes → execute;<br/>reveal role + append kill_log;<br/>else day_votes_called++</i>"]:::node
 
-        RV --> CWD["<b>check_win_day</b>"]:::node
-        CWD --> RWD{{"<b>route_after_win_day</b><br/>winner? /<br/>executed-this-cycle? /<br/>day_votes_called ≥ 3?"}}:::router
+        RV --> CWD["<b>check_win_day</b><br/><i>pure predicate</i>"]:::node
+        CWD --> RWD{{"<b>route_after_win_day</b><br/>winner? /<br/>executed-this-cycle? /<br/>day_votes_called ≥ 3? /<br/>day_rounds ≥ 6?"}}:::router
         RWD -- "winner" --> ES
-        RWD -- "executed or 3-cap" --> DC
-        RWD -- "vote failed; loop" --> DT
+        RWD -- "executed or cap hit" --> DC
+        RWD -- "vote failed; resume speaking" --> DT
 
-        DC --> NO
-        ES --> GEN([END]):::terminal
+        DC --> DD["<b>day_diary</b><br/><i>get_large() → Diary,<br/>ONE CALL PER SURVIVING AI, SEQUENTIAL.<br/>Writes private_diaries — private to<br/>their author, never public (spec 039)</i>"]:::silent
+        DD --> NO
+        ES --> MS["<b>moderator_story</b><br/><i>get_large() → Story;<br/>the closing story, told once.<br/>The ONE wait the UI narrates —<br/>border_subtitle hint (spec 040)</i>"]:::node
+        MS --> GEN([END]):::terminal
 
-        SON["<b>get_sonnet()</b><br/>ChatBedrockConverse<br/><i>eu.anthropic.claude-sonnet-4-5</i>"]:::llm
-        HAI["<b>get_haiku()</b><br/>ChatBedrockConverse<br/><i>eu.anthropic.claude-haiku-4-5</i>"]:::llm
+        LG["<b>get_large()</b> — gameplay<br/><b>get_small()</b> — mechanical<br/><i>Model-agnostic tiers (ADR 003).<br/>Three providers behind them (ADR 009/013):<br/>Bedrock Nova (nova-pro / nova-lite, us-east-1),<br/>Bedrock Claude, and local Ollama.<br/>NO Claude in the default gameplay path.</i>"]:::llm
 
-        GR -. "with_structured_output(Roster)" .-> HAI
-        MP -. "with_structured_output(Pointing)" .-> SON
-        DT -. "with_structured_output(DayAction)" .-> SON
-        CV -. "with_structured_output(Ballot)" .-> SON
+        GR -. "with_structured_output(Roster)" .-> LG
+        GP -. "Persona" .-> LG
+        MPT -. "Pointing" .-> LG
+        DT -. "DayAction" .-> LG
+        DRR -. "Reflection" .-> LG
+        CV -. "Ballot" .-> LG
+        DD -. "Diary" .-> LG
+        MS -. "Story" .-> LG
     end
 
     %% writes to state (dashed, cross-cluster — selective)
     CN -. "human_id, players[human], phase, cycle" .-> SP
     CN -. "{messages: [SystemMessage]}" .-> SM
-    GR -. "players += 6 AI" .-> SP
-    AR -. "players (roles assigned)" .-> SP
+    GR -. "players += N AI" .-> SP
+    AR -. "players (roles assigned), human_role" .-> SH
+    GP -. "players[*].persona" .-> SP
     IR -. "{messages: [SystemMessage]}" .-> SM
     RR -. "{messages: [private SystemMessage]}" .-> SM
     NO -. "phase=night, cycle, night_picks={}" .-> SPH
-    NO -. "winner=draw (if cycle≥20)" .-> SW
-    MP -. "night_picks" .-> SNP
+    NO -. "winner=draw (past max_days)" .-> SW
+    MRS -. "night_mafia_order, night_round" .-> SNP
+    MPT -. "night_picks, night_round_picks,<br/>night_pointer_index" .-> SNP
     RNK -. "players[victim].is_alive=False" .-> SP
     RNK -. "kill_log += KillRecord" .-> SKL
     DO -. "day_order, day_turn_index=0,<br/>day_rounds=0, day_votes_called=0" .-> SDO
     DT -. "active_vote (on /vote)" .-> SAV
-    DT -. "day_turn_index, day_rounds (round wrap)" .-> SDT
+    DT -. "day_turn_index, day_rounds (round wrap),<br/>day_turn_error" .-> SDO
+    DRR -. "private_thoughts += ThoughtRecord / player" .-> SPR
+    DD -. "private_diaries += DiaryRecord / player" .-> SPR
     CV -. "active_vote.ballots, .pending" .-> SAV
-    RV -. "players, kill_log,<br/>active_vote=None, day_votes_called++,<br/>day_order reshuffled" .-> SAV
+    CV -. "human_ballots_cast" .-> SHB
+    RV -. "players, kill_log, execution_count,<br/>active_vote=None, day_votes_called++,<br/>day_order reshuffled" .-> SAV
     CWN -. "winner (if condition met)" .-> SW
     CWD -. "winner (if condition met)" .-> SW
     ES -. "phase=end, {messages: [final SystemMessage]}" .-> SM
+    MS -. "{messages: [closing story]}" .-> SM
