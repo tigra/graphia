@@ -129,3 +129,9 @@ _Further improvement possibilities — explicitly deferred from v1, genuinely as
 
 - [ ] **LLM-as-Judge Game-Quality Evaluation**
   - [ ] **Whole-Transcript Judge:** Have a strong external model (Claude Opus 4.8, distinct from the gameplay model) read a *complete* game transcript — the preserved eval transcripts (see **Eval Transcript Preservation** in Phase 6) — and rate the game along several dimensions — **correctness** (were the rules and roles played out without violations?), **gameplay quality**, and — more tentatively — how **fun** the game was — emitting for each both a **numeric rating** and a **textual justification**. The judgement runs as part of the eval suite and its scores are recorded in the quality ledger alongside the existing behavioural metrics, so game quality becomes a tracked, comparable property of each run.
+
+- [ ] **Advanced LLM experimentation**
+  - [ ] Evaluate model-vs-model lineups, e.g. Haiku vs Nova or Haiku vs Sonnet, see how it changes win rates
+  - [ ] Try collecting good model "conversations transcripts" and finetune tunable model like Nova or Ollama runnable and see if it improves
+  - [ ] We can evaluate on more sophisticated criteria, how clever AIs are, which blunders they do, is the gameplay interesting using LLM as a judge
+  - [ ] Try using jev model for evaluations or fast decision making steps
