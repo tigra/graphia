@@ -11,16 +11,31 @@ flowchart TB
     %% above - see the note in docs/langgraph-topology.mermaid for why, and do
     %% not delete either half.
 
-    subgraph DEV ["Developer machine"]
+    subgraph DEV ["Developer machine — one app shell, two modes"]
         direction TB
         TUI["<b><span style='font-size:17px'>GraphiaApp</span></b><br/><i>Textual TUI; owns the asyncio loop.<br/>Nothing diagnostic is ever printed here —<br/>errors become a banner pointing at the log</i>"]:::app
         DRV["<b><span style='font-size:17px'>drive_graph</span></b><br/><i>iterates the chunk stream inside<br/>asyncio.to_thread, pumps Command(resume=…)<br/>after each interrupt. SAME loop both modes —<br/>the chunk shape is identical</i>"]:::app
-        LG["<b><span style='font-size:17px'>StateGraph, in-process</span></b><br/><i>the 24 nodes — see<br/>docs/langgraph-topology.mermaid</i>"]:::app
-        CK[("<b><span style='font-size:17px'>SqliteSaver</span></b><br/><i>.graphia/checkpoints/&lt;thread_id&gt;.sqlite<br/>one fresh thread per run; no save/load</i>")]:::store
-        DIA["<b><span style='font-size:17px'>InProcessDiaryStore</span></b><br/><i>diaries stay in GameState —<br/>nothing leaves the machine</i>"]:::store
-        CAR[("<b><span style='font-size:17px'>LocalFileStatsStore</span></b><br/><i>.graphia/career.json</i>")]:::store
-        OLL["<b><span style='font-size:17px'>Ollama</span></b><br/><i>localhost:11434, native API under a<br/>JSON-schema grammar (ADR 013).<br/>Free; no AWS involved at all.<br/>LOCAL MODE ONLY — Terraform REJECTS<br/>ollama for the Runtime by variable<br/>validation; a container has no localhost<br/>Ollama to reach</i>"]:::model
-        CLI["<b><span style='font-size:17px'>AgentCoreClient</span></b><br/><i>InvokeAgentRuntime over HTTPS,<br/>one call per interrupt-resume round</i>"]:::app
+
+        subgraph LOCALM ["LOCAL MODE — make play — the graph runs in this process"]
+            direction TB
+            LG["<b><span style='font-size:17px'>StateGraph, in-process</span></b><br/><i>the 24 nodes — see<br/>docs/langgraph-topology.mermaid</i>"]:::app
+            CK[("<b><span style='font-size:17px'>SqliteSaver</span></b><br/><i>.graphia/checkpoints/&lt;thread_id&gt;.sqlite<br/>one fresh thread per run; no save/load</i>")]:::store
+            DIA["<b><span style='font-size:17px'>InProcessDiaryStore</span></b><br/><i>diaries stay in GameState —<br/>nothing leaves the machine</i>"]:::store
+            CAR[("<b><span style='font-size:17px'>LocalFileStatsStore</span></b><br/><i>.graphia/career.json</i>")]:::store
+
+            subgraph OLLAMA ["Ollama — reachable ONLY from local mode"]
+                direction TB
+                OLL["<b><span style='font-size:17px'>ollama serve</span></b><br/><i>localhost:11434 — native API under a<br/>JSON-schema grammar (ADR 013), not the<br/>Anthropic-compatible endpoint</i>"]:::model
+                OLRG[("<b><span style='font-size:17px'>qwen3-coder:30b</span></b><br/><i>gameplay tier — get_large()<br/>GRAPHIA_OLLAMA_LARGE_MODEL</i>")]:::weights
+                OSML[("<b><span style='font-size:17px'>qwen2.5:3b</span></b><br/><i>mechanical tier — get_small()<br/>GRAPHIA_OLLAMA_SMALL_MODEL</i>")]:::weights
+            end
+        end
+
+        subgraph REMOTEM ["REMOTE MODE — make play-remote — the graph runs in AWS"]
+            direction TB
+            CES["<b><span style='font-size:17px'>AgentCoreCareerEventStore</span></b><br/><i>read-only career view; the remote-mode<br/>counterpart of LocalFileStatsStore.<br/>Selected by career_memory_id being set</i>"]:::store
+            CLI["<b><span style='font-size:17px'>AgentCoreClient</span></b><br/><i>InvokeAgentRuntime over HTTPS,<br/>one call per interrupt-resume round</i>"]:::app
+        end
     end
 
     subgraph BR ["Amazon Bedrock, us-east-1"]
@@ -59,10 +74,13 @@ flowchart TB
     LG --> DIA
     TUI -- "career read at launch" --> CAR
     LG -- "provider=ollama" --> OLL
+    OLL --> OLRG
+    OLL --> OSML
     LG -- "provider=bedrock" --> NOVA
     LG -- "provider=bedrock-claude" --> CLD
     CLI -- "HTTPS InvokeAgentRuntime" --> RT
-    TUI -- "career read at launch:<br/>AgentCoreCareerEventStore" --> LT
+    TUI -- "career read at launch" --> CES
+    CES --> LT
     ECR -. "image pinned by tag" .-> RT
     RT -- "llm_provider=bedrock (default)" --> NOVA
     RT -- "llm_provider=bedrock-claude<br/>(pinned today)" --> CLD
@@ -87,6 +105,7 @@ flowchart TB
     classDef aws fill:#ffe8cc,stroke:#000000,stroke-width:2px,color:#000000
     classDef model fill:#d0ebff,stroke:#000000,stroke-width:2px,color:#000000
     classDef store fill:#e9ecef,stroke:#000000,stroke-width:2px,color:#000000
+    classDef weights fill:#e5dbff,stroke:#000000,stroke-width:2px,color:#000000
     classDef ops fill:#ffdeeb,stroke:#000000,stroke-width:2px,color:#000000
 
     linkStyle default stroke:#000000,stroke-width:2px
