@@ -1,0 +1,91 @@
+%%{init: {'theme':'base','themeCSS':'span,p,text,tspan{color:#000000!important;fill:#000000!important;}.nodeLabel,.nodeLabel span,.nodeLabel p,.edgeLabel,.edgeLabel span,.edgeLabel p,.cluster-label,.cluster-label span,.cluster-label p,.label,.label span,.label p{color:#000000!important;fill:#000000!important;}','themeVariables':{'background':'#ffffff','fontFamily':'ui-sans-serif, system-ui, sans-serif','fontSize':'14px','textColor':'#000000','primaryTextColor':'#000000','secondaryTextColor':'#000000','tertiaryTextColor':'#000000','nodeTextColor':'#000000','titleColor':'#000000','lineColor':'#000000','edgeLabelBackground':'#ffffff','labelBackground':'#ffffff','clusterBkg':'#adb5bd','clusterBorder':'#343a40'}}}%%
+flowchart TB
+    %% Graphia — who runs what, and where, in local and remote mode.
+    %% Companion to docs/langgraph-topology.mermaid, which draws the StateGraph
+    %% itself. This one draws the deployment: the same 24-node graph either runs
+    %% in-process on the developer's machine or inside an AgentCore Runtime
+    %% container, and the collaborators differ accordingly.
+    %% Written 2026-09-23 against infra/terraform/main.tf, src/graphia/config.py,
+    %% src/graphia/diary_store.py, src/graphia/stats_store.py and the Makefile.
+    %% STYLING: the text colour needs BOTH classDef and the top-level themeCSS
+    %% above - see the note in docs/langgraph-topology.mermaid for why, and do
+    %% not delete either half.
+
+    subgraph DEV ["Developer machine"]
+        direction TB
+        TUI["<b><span style='font-size:17px'>GraphiaApp</span></b><br/><i>Textual TUI; owns the asyncio loop.<br/>Nothing diagnostic is ever printed here —<br/>errors become a banner pointing at the log</i>"]:::app
+        DRV["<b><span style='font-size:17px'>drive_graph</span></b><br/><i>iterates the chunk stream inside<br/>asyncio.to_thread, pumps Command(resume=…)<br/>after each interrupt. SAME loop both modes —<br/>the chunk shape is identical</i>"]:::app
+        LG["<b><span style='font-size:17px'>StateGraph, in-process</span></b><br/><i>the 24 nodes — see<br/>docs/langgraph-topology.mermaid</i>"]:::app
+        CK[("<b><span style='font-size:17px'>SqliteSaver</span></b><br/><i>.graphia/checkpoints/&lt;thread_id&gt;.sqlite<br/>one fresh thread per run; no save/load</i>")]:::store
+        DIA["<b><span style='font-size:17px'>InProcessDiaryStore</span></b><br/><i>diaries stay in GameState —<br/>nothing leaves the machine</i>"]:::store
+        CAR[("<b><span style='font-size:17px'>LocalFileStatsStore</span></b><br/><i>.graphia/career.json</i>")]:::store
+        OLL["<b><span style='font-size:17px'>Ollama</span></b><br/><i>localhost:11434, native API under a<br/>JSON-schema grammar (ADR 013).<br/>Free; no AWS involved at all</i>"]:::model
+        CLI["<b><span style='font-size:17px'>AgentCoreClient</span></b><br/><i>InvokeAgentRuntime over HTTPS,<br/>one call per interrupt-resume round</i>"]:::app
+    end
+
+    subgraph BR ["Amazon Bedrock, us-east-1"]
+        direction TB
+        NOVA["<b><span style='font-size:17px'>Nova Pro + Nova Lite</span></b><br/><i>GRAPHIA_LLM_PROVIDER=bedrock (default)<br/>get_large() / get_small()</i>"]:::model
+        CLD["<b><span style='font-size:17px'>Claude Haiku 4.5</span></b><br/><i>GRAPHIA_LLM_PROVIDER=bedrock-claude<br/>what the deployed Runtime uses today</i>"]:::model
+    end
+
+    subgraph AWS ["AWS us-east-1 — provisioned by Terraform, run in a container via ./tf"]
+        direction TB
+        ECR[("<b><span style='font-size:17px'>ECR</span></b><br/><i>runtime image, tagged with the git commit</i>")]:::aws
+        RT["<b><span style='font-size:17px'>AgentCore Runtime</span></b><br/><i>graphia_demo_runtime — scale-to-zero.<br/>Runs the SAME StateGraph from the SAME<br/>source, in a container</i>"]:::aws
+        GW["<b><span style='font-size:17px'>AgentCore Gateway (MCP)</span></b><br/><i>two targets: diary_write, diary_read.<br/>The agent sees an MCP server; Gateway<br/>does the IAM and the fan-out</i>"]:::aws
+        LW["<b><span style='font-size:17px'>Lambda diary_write</span></b>"]:::aws
+        LR["<b><span style='font-size:17px'>Lambda diary_read</span></b>"]:::aws
+        MEM[("<b><span style='font-size:17px'>Memory — per-game diaries</span></b>")]:::store
+        CMEM[("<b><span style='font-size:17px'>Memory — career, short-term</span></b><br/><i>one CreateEvent per career event;<br/>the session log</i>")]:::store
+        S3[("<b><span style='font-size:17px'>S3</span></b><br/><i>strategy payload</i>")]:::store
+        SNS["<b><span style='font-size:17px'>SNS topic</span></b><br/><i>fired by the self-managed strategy</i>"]:::aws
+        CC["<b><span style='font-size:17px'>Lambda career_consumer</span></b><br/><i>folds ONLY on game_ended /<br/>game_abandoned, so a game consolidates<br/>exactly once (ADR 008)</i>"]:::aws
+        LT[("<b><span style='font-size:17px'>Memory — career, long-term</span></b><br/><i>batch_create / batch_update<br/>_memory_records</i>")]:::store
+        OBS[("<b><span style='font-size:17px'>CloudWatch + X-Ray</span></b><br/><i>aws/spans via Transaction Search,<br/>runtime log group, vended delivery.<br/>OTel is injected BY THE PLATFORM —<br/>Graphia wires none of it</i>")]:::aws
+    end
+
+    subgraph OPS ["Deploy and verify — make targets"]
+        direction TB
+        MD["<b><span style='font-size:17px'>make deploy / redeploy</span></b><br/><i>build-lambdas → push → tf-apply → wire-env</i>"]:::ops
+        MV["<b><span style='font-size:17px'>make verify-pipeline<br/>make verify-observability</span></b><br/><i>drive the real deploy and read back<br/>real telemetry; a script, not eyeballed<br/>aws calls</i>"]:::ops
+        MT["<b><span style='font-size:17px'>make show-trace</span></b><br/><i>renders a recorded trace tree as text</i>"]:::ops
+    end
+
+    TUI --> DRV
+    DRV -- "local mode: make play" --> LG
+    DRV -- "remote mode: make play-remote<br/>(--remote / GRAPHIA_REMOTE=1)" --> CLI
+    LG --> CK
+    LG --> DIA
+    TUI -- "career read at launch" --> CAR
+    LG -- "provider=ollama" --> OLL
+    LG -- "provider=bedrock" --> NOVA
+    LG -- "provider=bedrock-claude" --> CLD
+    CLI -- "HTTPS InvokeAgentRuntime" --> RT
+    TUI -- "career read at launch:<br/>AgentCoreCareerEventStore" --> LT
+    ECR -. "image pinned by tag" .-> RT
+    RT -- "LLM_PROVIDER pinned in .env" --> CLD
+    RT -- "diary tools over MCP" --> GW
+    GW --> LW
+    GW --> LR
+    LW --> MEM
+    LR -. "read-back; the only live<br/>exercise of this path" .-> MEM
+    RT -- "CreateEvent" --> CMEM
+    CMEM -- "strategy trigger" --> SNS
+    CMEM -. "payload" .-> S3
+    SNS --> CC
+    S3 -. "s3PayloadLocation" .-> CC
+    CC --> LT
+    RT -. "traces + logs" .-> OBS
+    MD -. "builds + pushes" .-> ECR
+    MD -. "applies" .-> AWS
+    MV -. "reads" .-> OBS
+    MT -. "reads aws/spans" .-> OBS
+
+    classDef app fill:#d3f9d8,stroke:#000000,stroke-width:2px,color:#000000
+    classDef aws fill:#ffe8cc,stroke:#000000,stroke-width:2px,color:#000000
+    classDef model fill:#d0ebff,stroke:#000000,stroke-width:2px,color:#000000
+    classDef store fill:#e9ecef,stroke:#000000,stroke-width:2px,color:#000000
+    classDef ops fill:#ffdeeb,stroke:#000000,stroke-width:2px,color:#000000
+
+    linkStyle default stroke:#000000,stroke-width:2px

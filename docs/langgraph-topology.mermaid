@@ -1,0 +1,153 @@
+%%{init: {'theme':'base','themeCSS':'span,p,text,tspan{color:#000000!important;fill:#000000!important;}.nodeLabel,.nodeLabel span,.nodeLabel p,.edgeLabel,.edgeLabel span,.edgeLabel p,.cluster-label,.cluster-label span,.cluster-label p,.label,.label span,.label p{color:#000000!important;fill:#000000!important;}','themeVariables':{'background':'#ffffff','fontFamily':'ui-sans-serif, system-ui, sans-serif','fontSize':'14px','textColor':'#000000','primaryTextColor':'#000000','secondaryTextColor':'#000000','tertiaryTextColor':'#000000','nodeTextColor':'#000000','titleColor':'#000000','lineColor':'#000000','edgeLabelBackground':'#ffffff','labelBackground':'#ffffff','clusterBkg':'#adb5bd','clusterBorder':'#343a40'}}}%%
+flowchart TB
+    %% Graphia — StateGraph topology and state shape.
+    %% Regenerated 2026-09-22 against src/graphia/graph.py (24 nodes, 35 edges,
+    %% verified via build_graph(load_config())[0].get_graph()).
+    %% The topology half can be re-derived mechanically; the annotations are
+    %% hand-maintained and are the part that goes stale. See backlog: "Nothing
+    %% keeps the architecture diagram honest".
+    %% A BARE "%%" LINE IS NOT A COMMENT HERE - Mermaid renders it as a
+    %% node. Every comment line below carries text for that reason.
+    %% CONTRAST, measured (WCAG relative luminance), all text pure black:
+    %%   black text / black border on every fill .. 16.1-18.3:1
+    %%   node fill on the enclosing grey plate ...... 1.59-1.81:1 (plus a 2px border)
+    %%   black lines and subgraph titles on plate .. 10.1:1
+    %%   plate on the white page .................... 2.07:1
+    %%   The plate is grey-500, not white, because luminance contrast does not
+    %%   separate two pale tints of different hue: against white these fills sat
+    %%   at 1.07-1.11:1 and the boxes had no visible edge at all.
+    %%   The init directive above MUST be line 1 - Mermaid will not accept it
+    %%   behind %% comments. The theme is pinned because anything the renderer
+    %%   paints itself follows the VIEWER's theme otherwise (a dark-mode IDE
+    %%   preview turns the labels light grey).
+    %%   TEXT COLOUR NEEDS BOTH MECHANISMS - REMOVING EITHER TURNS IT GREY:
+    %%   1. classDef carries the node labels. Mermaid emits its color: as
+    %%      `color:rgb(0,0,0)!important`, which nothing can override. It does
+    %%      NOT reach edge labels or the two subgraph titles.
+    %%   2. themeCSS (top level, a SIBLING of theme - inside themeVariables it
+    %%      is ignored) carries everything classDef cannot: edge labels and
+    %%      subgraph titles. themeVariables alone sets them black WITHOUT
+    %%      !important, so a dark-mode IDE preview repaints them light grey.
+    %%   DO NOT "SIMPLIFY" THIS BY DELETING themeCSS. mermaid-cli renders with
+    %%   securityLevel:strict, which STRIPS themeCSS and shows no difference,
+    %%   so a local render is not evidence that it does nothing - IDE previews
+    %%   run looser and do apply it. That false reading cost several rounds.
+    %%   Per-node `style` statements are NOT a substitute for classDef here:
+    %%   swapping them in lost the node-label colour.
+    classDef state fill:#ffe8cc,stroke:#000000,stroke-width:2px,color:#000000
+    classDef llm fill:#d0ebff,stroke:#000000,stroke-width:2px,color:#000000
+    classDef router fill:#ffdeeb,stroke:#000000,stroke-width:2px,color:#000000
+    classDef node fill:#d3f9d8,stroke:#000000,stroke-width:2px,color:#000000
+    classDef silent fill:#f3d9fa,stroke:#000000,stroke-width:2px,color:#000000
+    classDef terminal fill:#e9ecef,stroke:#000000,stroke-width:2px,color:#000000
+
+    subgraph STATE ["GameState (TypedDict, total=False) — one snapshot per super-step"]
+        direction LR
+        SM["<b><span style='font-size:17px'>messages</span></b><br/>list[AnyMessage]<br/><i>reducer: add_messages</i>"]:::state
+        SP["<b><span style='font-size:17px'>players</span></b><br/>dict[id → PlayerState]<br/><i>replace</i>"]:::state
+        SH["<b><span style='font-size:17px'>human_id</span></b>, <b>human_role</b>: str<br/><i>replace</i>"]:::state
+        SPH["<b><span style='font-size:17px'>phase</span></b>: setup|night|day|end<br/><b>cycle</b>: int<br/><i>replace</i>"]:::state
+        SNP["<b><span style='font-size:17px'>night_picks</span></b>, <b>night_round</b>,<br/><b>night_mafia_order</b>, <b>night_pointer_index</b>,<br/><b>night_round_picks</b>, <b>night_rounds_log</b>,<br/><b>night_law_order</b><br/><i>multi-round pointing (spec 015)</i>"]:::state
+        SDO["<b><span style='font-size:17px'>day_order</span></b>, <b>day_turn_index</b>,<br/><b>day_rounds</b>, <b>day_votes_called</b>,<br/><b>day_votes_initiated</b>, <b>day_turn_error</b><br/><i>replace</i>"]:::state
+        SAV["<b><span style='font-size:17px'>active_vote</span></b>: ActiveVote|None<br/><i>{initiator, target,<br/>ballots, pending}</i>"]:::state
+        SPR["<b><span style='font-size:17px'>private_thoughts</span></b><br/>dict[id → list[ThoughtRecord]]<br/><b>private_diaries</b><br/>dict[id → list[DiaryRecord]]<br/><i>never public — see silent nodes</i>"]:::state
+        SHB["<b><span style='font-size:17px'>human_votes_called</span></b>, <b>human_ballots_cast</b>,<br/><b>human_night_attempts</b>, <b>human_night_successes</b>,<br/><b>night_victim_count</b>, <b>execution_count</b><br/><i>career/eval counters</i>"]:::state
+        SKL["<b><span style='font-size:17px'>kill_log</span></b><br/>list[KillRecord]<br/><i>reducer: operator.add</i>"]:::state
+        SW["<b><span style='font-size:17px'>winner</span></b>: law_abiding|mafia|draw|None<br/><i>replace</i>"]:::state
+    end
+
+    STATE ~~~ GRAPH
+
+    subgraph GRAPH ["StateGraph(GameState) — compiled with SqliteSaver(.graphia/checkpoints/&lt;thread_id&gt;.sqlite)"]
+        direction TB
+        GST([START]):::terminal --> CN["<b><span style='font-size:17px'>collect_name</span></b><br/><i>interrupt(kind=name)</i>"]:::node
+        CN --> GR["<b><span style='font-size:17px'>generate_roster</span></b><br/><i>get_small() → Roster;<br/>N distinct names (7 AI at the<br/>6+2 default, CR 007)</i>"]:::node
+        GR --> AR["<b><span style='font-size:17px'>assign_roles</span></b><br/><i>shuffle + deal:<br/>num_mafia × Mafia +<br/>num_citizens × Law-abiding<br/>(default 2 + 6);<br/>emits a career event</i>"]:::node
+        AR --> GP["<b><span style='font-size:17px'>generate_personas</span></b><br/><i>get_persona_model(temp) → Persona,<br/>ONE CALL PER AI PLAYER, SEQUENTIAL —<br/>each sees the personas already written<br/>so the next is made unlike them<br/>(specs 031 / 034)</i>"]:::silent
+        GP --> IR["<b><span style='font-size:17px'>introduce_roster</span></b><br/><i>public Moderator line</i>"]:::node
+        IR --> RR["<b><span style='font-size:17px'>reveal_role</span></b><br/><i>private message to human</i>"]:::node
+        RR --> FN["<b><span style='font-size:17px'>first_night_mafia_intros</span></b><br/><i>cycle == 1 only;<br/>private to each Mafia</i>"]:::node
+        FN --> NO["<b><span style='font-size:17px'>night_open</span></b><br/><i>'Night falls';<br/>cycle++ on re-entry from Day</i>"]:::node
+
+        NO --> RNO{{"<b><span style='font-size:17px'>route_after_night_open</span></b><br/>cycle > max_days (default 12)<br/>→ draw (spec 023)"}}:::router
+        RNO -- "runaway → draw" --> ES["<b><span style='font-size:17px'>end_screen</span></b><br/><i>winner line +<br/>kill_log + roster reveal</i>"]:::node
+        RNO -- "else" --> MRS["<b><span style='font-size:17px'>mafia_round_start</span></b><br/><i>shuffle the pointing order;<br/>opens one consensus round<br/>(spec 015)</i>"]:::node
+
+        MRS --> MPT["<b><span style='font-size:17px'>mafia_point</span></b><br/><i>ONE pointer per super-step;<br/>interrupt(kind=point) for human;<br/>get_large() → Pointing for AI</i>"]:::node
+        MPT --> RMP{{"<b><span style='font-size:17px'>route_after_mafia_point</span></b><br/>more pointers this round? /<br/>unanimous or round cap (3)?"}}:::router
+        RMP -- "next pointer" --> MPT
+        RMP -- "split, under cap" --> MRS
+        RMP -- "unanimous / cap" --> RNK["<b><span style='font-size:17px'>resolve_night_kill</span></b><br/><i>strict majority +<br/>random tie-break;<br/>flips is_alive,<br/>kill_log += record (role hidden)</i>"]:::node
+
+        RNK --> CWN["<b><span style='font-size:17px'>check_win_night</span></b><br/><i>pure predicate</i>"]:::node
+        CWN --> RWN{{"<b><span style='font-size:17px'>route_after_win_night</span></b><br/>winner set?"}}:::router
+        RWN -- "yes" --> ES
+        RWN -- "no" --> NC["<b><span style='font-size:17px'>night_close</span></b><br/><i>Night 2+: every surviving AI<br/>READS ITS OWN DIARY BACK.<br/>Feeds nothing to the model — kept as<br/>the only live exercise of the remote<br/>read path (Gateway → Lambda → Memory)</i>"]:::silent
+
+        NC --> DO["<b><span style='font-size:17px'>day_open</span></b><br/><i>reveal last Night's victim role;<br/>shuffle day_order;<br/>reset turn/round/vote counters</i>"]:::node
+        DO --> DT["<b><span style='font-size:17px'>day_turn</span></b><br/><i>ONE player per super-step;<br/>interrupt(kind=day_turn) for human;<br/>get_large() → DayAction for AI;<br/>/vote &lt;name&gt; sets active_vote</i>"]:::node
+
+        DT --> RDT{{"<b><span style='font-size:17px'>route_day_turn_or_vote</span></b><br/>1 active_vote? → vote_prompt<br/>2 day_turn_error? → re-prompt<br/>3 day_rounds ≥ 6? → day_close<br/>4 round just wrapped? → reflect<br/>5 else next speaker"}}:::router
+        RDT -- "vote called" --> VP["<b><span style='font-size:17px'>vote_prompt</span></b><br/><i>'X has called for a vote<br/>to execute Y'</i>"]:::node
+        RDT -- "next speaker / re-prompt" --> DT
+        RDT -- "round wrapped" --> DRR["<b><span style='font-size:17px'>day_round_reflect</span></b><br/><i>get_large() → Reflection,<br/>ONE CALL PER SURVIVING AI, SEQUENTIAL.<br/>Writes private_thoughts and NO public<br/>messages — the privacy invariant<br/>(spec 028)</i>"]:::silent
+        RDT -- "6-round cap" --> DC["<b><span style='font-size:17px'>day_close</span></b><br/><i>'Day ends with no execution'<br/>(suppressed if just executed);<br/>closing recap</i>"]:::node
+        DRR --> DT
+
+        VP --> CV["<b><span style='font-size:17px'>collect_votes</span></b><br/><i>ONE voter per super-step;<br/>interrupt(kind=vote) for human;<br/>get_large() → Ballot for AI</i>"]:::node
+        CV --> RCV{{"<b><span style='font-size:17px'>route_collect_votes</span></b><br/>pending empty?"}}:::router
+        RCV -- "more voters" --> CV
+        RCV -- "all cast" --> RV["<b><span style='font-size:17px'>resolve_vote</span></b><br/><i>strict majority Yes → execute;<br/>reveal role + append kill_log;<br/>else day_votes_called++</i>"]:::node
+
+        RV --> CWD["<b><span style='font-size:17px'>check_win_day</span></b><br/><i>pure predicate</i>"]:::node
+        CWD --> RWD{{"<b><span style='font-size:17px'>route_after_win_day</span></b><br/>winner? /<br/>executed-this-cycle? /<br/>day_votes_called ≥ 3? /<br/>day_rounds ≥ 6?"}}:::router
+        RWD -- "winner" --> ES
+        RWD -- "executed or cap hit" --> DC
+        RWD -- "vote failed; resume speaking" --> DT
+
+        DC --> DD["<b><span style='font-size:17px'>day_diary</span></b><br/><i>get_large() → Diary,<br/>ONE CALL PER SURVIVING AI, SEQUENTIAL.<br/>Writes private_diaries — private to<br/>their author, never public (spec 039)</i>"]:::silent
+        DD --> NO
+        ES --> MS["<b><span style='font-size:17px'>moderator_story</span></b><br/><i>get_large() → Story;<br/>the closing story, told once.<br/>The ONE wait the UI narrates —<br/>border_subtitle hint (spec 040)</i>"]:::node
+        MS --> GEN([END]):::terminal
+
+        LG["<b><span style='font-size:17px'>get_large()</span></b> — gameplay<br/><b>get_small()</b> — mechanical<br/><i>Model-agnostic tiers (ADR 003).<br/>Three providers behind them (ADR 009/013):<br/>Bedrock Nova (nova-pro / nova-lite, us-east-1),<br/>Bedrock Claude, and local Ollama.<br/>NO Claude in the default gameplay path.</i>"]:::llm
+
+        GR -. "with_structured_output(Roster)" .-> LG
+        GP -. "Persona" .-> LG
+        MPT -. "Pointing" .-> LG
+        DT -. "DayAction" .-> LG
+        DRR -. "Reflection" .-> LG
+        CV -. "Ballot" .-> LG
+        DD -. "Diary" .-> LG
+        MS -. "Story" .-> LG
+    end
+
+    %% writes to state (dashed, cross-cluster — selective)
+    CN -. "human_id, players[human], phase, cycle" .-> SP
+    CN -. "{messages: [SystemMessage]}" .-> SM
+    GR -. "players += N AI" .-> SP
+    AR -. "players (roles assigned), human_role" .-> SH
+    GP -. "players[*].persona" .-> SP
+    IR -. "{messages: [SystemMessage]}" .-> SM
+    RR -. "{messages: [private SystemMessage]}" .-> SM
+    NO -. "phase=night, cycle, night_picks={}" .-> SPH
+    NO -. "winner=draw (past max_days)" .-> SW
+    MRS -. "night_mafia_order, night_round" .-> SNP
+    MPT -. "night_picks, night_round_picks,<br/>night_pointer_index" .-> SNP
+    RNK -. "players[victim].is_alive=False" .-> SP
+    RNK -. "kill_log += KillRecord" .-> SKL
+    DO -. "day_order, day_turn_index=0,<br/>day_rounds=0, day_votes_called=0" .-> SDO
+    DT -. "active_vote (on /vote)" .-> SAV
+    DT -. "day_turn_index, day_rounds (round wrap),<br/>day_turn_error" .-> SDO
+    DRR -. "private_thoughts += ThoughtRecord / player" .-> SPR
+    DD -. "private_diaries += DiaryRecord / player" .-> SPR
+    CV -. "active_vote.ballots, .pending" .-> SAV
+    CV -. "human_ballots_cast" .-> SHB
+    RV -. "players, kill_log, execution_count,<br/>active_vote=None, day_votes_called++,<br/>day_order reshuffled" .-> SAV
+    CWN -. "winner (if condition met)" .-> SW
+    CWD -. "winner (if condition met)" .-> SW
+    ES -. "phase=end, {messages: [final SystemMessage]}" .-> SM
+    MS -. "{messages: [closing story]}" .-> SM
+
+    %% Every link black and 2px - thin grey edges vanish at diagram scale.
+    linkStyle default stroke:#000000,stroke-width:2px
