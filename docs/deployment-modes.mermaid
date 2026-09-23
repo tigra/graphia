@@ -22,6 +22,7 @@ flowchart TB
             CK[("<b><span style='font-size:17px'>SqliteSaver</span></b><br/><i>.graphia/checkpoints/&lt;thread_id&gt;.sqlite<br/>one fresh thread per run; no save/load</i>")]:::store
             DIA["<b><span style='font-size:17px'>InProcessDiaryStore</span></b><br/><i>diaries stay in GameState —<br/>nothing leaves the machine</i>"]:::store
             CAR[("<b><span style='font-size:17px'>LocalFileStatsStore</span></b><br/><i>.graphia/career.json</i>")]:::store
+            EVAL["<b><span style='font-size:17px'>make blunder-eval</span></b><br/><b><span style='font-size:17px'>make persona-bench --semantic</span></b><br/><i>out-of-suite harnesses — scripted human,<br/>real model, provenance-stamped records<br/>appended to evals/blunder-ledger.yaml</i>"]:::ops
 
             subgraph OLLAMA ["Ollama — reachable ONLY from local mode"]
                 direction TB
@@ -38,27 +39,32 @@ flowchart TB
         end
     end
 
-    subgraph BR ["Amazon Bedrock, us-east-1 — managed inference, reached from BOTH modes"]
-        direction TB
-        NPRO(["<b><span style='font-size:17px'>amazon.nova-pro-v1:0</span></b><br/><i>gameplay tier — get_large()</i>"]):::weights
-        NLIT(["<b><span style='font-size:17px'>amazon.nova-lite-v1:0</span></b><br/><i>mechanical tier — get_small()</i>"]):::weights
-        CLDM(["<b><span style='font-size:17px'>claude-haiku-4-5</span></b><br/><i>us.anthropic.claude-haiku-4-5-20251001-v1:0<br/>BOTH tiers use this ONE model (ADR 012)</i>"]):::weights
-    end
 
-    subgraph AWS ["AWS us-east-1 — provisioned by Terraform, run in a container via ./tf"]
+    subgraph AWS ["AWS us-east-1"]
         direction TB
-        ECR[("<b><span style='font-size:17px'>ECR</span></b><br/><i>runtime image, tagged with the git commit</i>")]:::aws
-        RT["<b><span style='font-size:17px'>AgentCore Runtime</span></b><br/><i>graphia_demo_runtime — scale-to-zero.<br/>Runs the SAME StateGraph from the SAME<br/>source, in a container, with its own<br/>ChatBedrockConverse.<br/>Its role ALWAYS allows amazon.nova-*;<br/>the Claude profile ARNs are added only<br/>when llm_provider=bedrock-claude</i>"]:::aws
-        GW["<b><span style='font-size:17px'>AgentCore Gateway (MCP)</span></b><br/><i>two targets: diary_write, diary_read.<br/>The agent sees an MCP server; Gateway<br/>does the IAM and the fan-out</i>"]:::aws
-        LW["<b><span style='font-size:17px'>Lambda diary_write</span></b>"]:::aws
-        LR["<b><span style='font-size:17px'>Lambda diary_read</span></b>"]:::aws
-        MEM[("<b><span style='font-size:17px'>Memory — per-game diaries</span></b>")]:::store
-        CMEM[("<b><span style='font-size:17px'>Memory — career, short-term</span></b><br/><i>one CreateEvent per career event;<br/>the session log</i>")]:::store
-        S3[("<b><span style='font-size:17px'>S3</span></b><br/><i>strategy payload</i>")]:::store
-        SNS["<b><span style='font-size:17px'>SNS topic</span></b><br/><i>fired by the self-managed strategy</i>"]:::aws
-        CC["<b><span style='font-size:17px'>Lambda career_consumer</span></b><br/><i>folds ONLY on game_ended /<br/>game_abandoned, so a game consolidates<br/>exactly once (ADR 008)</i>"]:::aws
-        LT[("<b><span style='font-size:17px'>Memory — career, long-term</span></b><br/><i>batch_create / batch_update<br/>_memory_records</i>")]:::store
-        OBS[("<b><span style='font-size:17px'>CloudWatch + X-Ray</span></b><br/><i>aws/spans via Transaction Search,<br/>runtime log group, vended delivery.<br/>OTel is injected BY THE PLATFORM —<br/>Graphia wires none of it</i>")]:::aws
+        subgraph TFM ["Provisioned by this repo — Terraform, run in a container via ./tf"]
+            direction TB
+            ECR[("<b><span style='font-size:17px'>ECR</span></b><br/><i>runtime image, tagged with the git commit</i>")]:::aws
+            RT["<b><span style='font-size:17px'>AgentCore Runtime</span></b><br/><i>graphia_demo_runtime — scale-to-zero.<br/>Runs the SAME StateGraph from the SAME<br/>source, in a container, with its own<br/>ChatBedrockConverse.<br/>Its role ALWAYS allows amazon.nova-*;<br/>the Claude profile ARNs are added only<br/>when llm_provider=bedrock-claude</i>"]:::aws
+            GW["<b><span style='font-size:17px'>AgentCore Gateway (MCP)</span></b><br/><i>two targets: diary_write, diary_read.<br/>The agent sees an MCP server; Gateway<br/>does the IAM and the fan-out</i>"]:::aws
+            LW["<b><span style='font-size:17px'>Lambda diary_write</span></b>"]:::aws
+            LR["<b><span style='font-size:17px'>Lambda diary_read</span></b>"]:::aws
+            MEM[("<b><span style='font-size:17px'>Memory — per-game diaries</span></b>")]:::store
+            CMEM[("<b><span style='font-size:17px'>Memory — career, short-term</span></b><br/><i>one CreateEvent per career event;<br/>the session log</i>")]:::store
+            S3[("<b><span style='font-size:17px'>S3</span></b><br/><i>strategy payload</i>")]:::store
+            SNS["<b><span style='font-size:17px'>SNS topic</span></b><br/><i>fired by the self-managed strategy</i>"]:::aws
+            CC["<b><span style='font-size:17px'>Lambda career_consumer</span></b><br/><i>folds ONLY on game_ended /<br/>game_abandoned, so a game consolidates<br/>exactly once (ADR 008)</i>"]:::aws
+            LT[("<b><span style='font-size:17px'>Memory — career, long-term</span></b><br/><i>batch_create / batch_update<br/>_memory_records</i>")]:::store
+            OBS[("<b><span style='font-size:17px'>CloudWatch + X-Ray</span></b><br/><i>aws/spans via Transaction Search,<br/>runtime log group, vended delivery.<br/>OTel is injected BY THE PLATFORM —<br/>Graphia wires none of it</i>")]:::aws
+        end
+
+        subgraph BR ["Amazon Bedrock — managed inference; none of this is ours to provision"]
+            direction TB
+            NPRO(["<b><span style='font-size:17px'>amazon.nova-pro-v1:0</span></b><br/><i>gameplay tier — get_large()</i>"]):::weights
+            NLIT(["<b><span style='font-size:17px'>amazon.nova-lite-v1:0</span></b><br/><i>mechanical tier — get_small()</i>"]):::weights
+            CLDM(["<b><span style='font-size:17px'>claude-haiku-4-5</span></b><br/><i>us.anthropic.claude-haiku-4-5-20251001-v1:0<br/>BOTH tiers use this ONE model (ADR 012)</i>"]):::weights
+            TTN(["<b><span style='font-size:17px'>amazon.titan-embed-text-v2:0</span></b><br/><i>semantic persona metric (spec 033).<br/>ALWAYS Bedrock — never routed through<br/>GRAPHIA_LLM_PROVIDER</i>"]):::weights
+        end
     end
 
     subgraph OPS ["Deploy and verify — make targets"]
@@ -100,9 +106,11 @@ flowchart TB
     CC --> LT
     RT -. "traces + logs" .-> OBS
     MD -. "builds + pushes" .-> ECR
-    MD -. "applies" .-> AWS
+    MD -. "applies" .-> TFM
     MV -. "reads" .-> OBS
     MT -. "reads aws/spans" .-> OBS
+    EVAL -- "plays N real games" --> LG
+    EVAL -- "embeds personas" --> TTN
 
     classDef app fill:#d3f9d8,stroke:#000000,stroke-width:2px,color:#000000
     classDef aws fill:#ffe8cc,stroke:#000000,stroke-width:2px,color:#000000
