@@ -19,20 +19,20 @@ flowchart TB
         CK[("<b><span style='font-size:17px'>SqliteSaver</span></b><br/><i>.graphia/checkpoints/&lt;thread_id&gt;.sqlite<br/>one fresh thread per run; no save/load</i>")]:::store
         DIA["<b><span style='font-size:17px'>InProcessDiaryStore</span></b><br/><i>diaries stay in GameState —<br/>nothing leaves the machine</i>"]:::store
         CAR[("<b><span style='font-size:17px'>LocalFileStatsStore</span></b><br/><i>.graphia/career.json</i>")]:::store
-        OLL["<b><span style='font-size:17px'>Ollama</span></b><br/><i>localhost:11434, native API under a<br/>JSON-schema grammar (ADR 013).<br/>Free; no AWS involved at all</i>"]:::model
+        OLL["<b><span style='font-size:17px'>Ollama</span></b><br/><i>localhost:11434, native API under a<br/>JSON-schema grammar (ADR 013).<br/>Free; no AWS involved at all.<br/>LOCAL MODE ONLY — Terraform REJECTS<br/>ollama for the Runtime by variable<br/>validation; a container has no localhost<br/>Ollama to reach</i>"]:::model
         CLI["<b><span style='font-size:17px'>AgentCoreClient</span></b><br/><i>InvokeAgentRuntime over HTTPS,<br/>one call per interrupt-resume round</i>"]:::app
     end
 
     subgraph BR ["Amazon Bedrock, us-east-1"]
         direction TB
-        NOVA["<b><span style='font-size:17px'>Nova Pro + Nova Lite</span></b><br/><i>GRAPHIA_LLM_PROVIDER=bedrock (default)<br/>get_large() / get_small()</i>"]:::model
-        CLD["<b><span style='font-size:17px'>Claude Haiku 4.5</span></b><br/><i>GRAPHIA_LLM_PROVIDER=bedrock-claude<br/>what the deployed Runtime uses today</i>"]:::model
+        NOVA["<b><span style='font-size:17px'>Nova Pro + Nova Lite</span></b><br/><i>GRAPHIA_LLM_PROVIDER=bedrock —<br/>THE DEFAULT IN BOTH MODES<br/>(Makefile: LLM_PROVIDER ?= bedrock).<br/>get_large() / get_small()</i>"]:::model
+        CLD["<b><span style='font-size:17px'>Claude Haiku 4.5</span></b><br/><i>GRAPHIA_LLM_PROVIDER=bedrock-claude —<br/>opt-in. Pinned in .env, because without<br/>the pin every redeploy silently reverts<br/>the live Runtime to Nova</i>"]:::model
     end
 
     subgraph AWS ["AWS us-east-1 — provisioned by Terraform, run in a container via ./tf"]
         direction TB
         ECR[("<b><span style='font-size:17px'>ECR</span></b><br/><i>runtime image, tagged with the git commit</i>")]:::aws
-        RT["<b><span style='font-size:17px'>AgentCore Runtime</span></b><br/><i>graphia_demo_runtime — scale-to-zero.<br/>Runs the SAME StateGraph from the SAME<br/>source, in a container</i>"]:::aws
+        RT["<b><span style='font-size:17px'>AgentCore Runtime</span></b><br/><i>graphia_demo_runtime — scale-to-zero.<br/>Runs the SAME StateGraph from the SAME<br/>source, in a container.<br/>Its role ALWAYS allows amazon.nova-*;<br/>the Claude profile ARNs are added only<br/>when llm_provider=bedrock-claude</i>"]:::aws
         GW["<b><span style='font-size:17px'>AgentCore Gateway (MCP)</span></b><br/><i>two targets: diary_write, diary_read.<br/>The agent sees an MCP server; Gateway<br/>does the IAM and the fan-out</i>"]:::aws
         LW["<b><span style='font-size:17px'>Lambda diary_write</span></b>"]:::aws
         LR["<b><span style='font-size:17px'>Lambda diary_read</span></b>"]:::aws
@@ -64,7 +64,8 @@ flowchart TB
     CLI -- "HTTPS InvokeAgentRuntime" --> RT
     TUI -- "career read at launch:<br/>AgentCoreCareerEventStore" --> LT
     ECR -. "image pinned by tag" .-> RT
-    RT -- "LLM_PROVIDER pinned in .env" --> CLD
+    RT -- "llm_provider=bedrock (default)" --> NOVA
+    RT -- "llm_provider=bedrock-claude<br/>(pinned today)" --> CLD
     RT -- "diary tools over MCP" --> GW
     GW --> LW
     GW --> LR
