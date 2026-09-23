@@ -1,5 +1,5 @@
-%%{init: {'theme':'base','themeCSS':'span,p,text,tspan{color:#000000!important;fill:#000000!important;}.nodeLabel,.nodeLabel span,.nodeLabel p,.edgeLabel,.edgeLabel span,.edgeLabel p,.cluster-label,.cluster-label span,.cluster-label p,.label,.label span,.label p{color:#000000!important;fill:#000000!important;}','themeVariables':{'background':'#ffffff','fontFamily':'ui-sans-serif, system-ui, sans-serif','fontSize':'14px','textColor':'#000000','primaryTextColor':'#000000','secondaryTextColor':'#000000','tertiaryTextColor':'#000000','nodeTextColor':'#000000','titleColor':'#000000','lineColor':'#000000','edgeLabelBackground':'#ffffff','labelBackground':'#ffffff','clusterBkg':'#adb5bd','clusterBorder':'#343a40'}}}%%
-flowchart TB
+%%{init: {'theme':'base','themeCSS':'span,p,text,tspan{color:#000000!important;fill:#000000!important;}.nodeLabel,.nodeLabel span,.nodeLabel p,.edgeLabel,.edgeLabel span,.edgeLabel p,.cluster-label,.cluster-label span,.cluster-label p,.label,.label span,.label p{color:#000000!important;fill:#000000!important;}','themeVariables':{'background':'#ffffff','fontFamily':'ui-sans-serif, system-ui, sans-serif','fontSize':'14px','textColor':'#000000','primaryTextColor':'#000000','secondaryTextColor':'#000000','tertiaryTextColor':'#000000','nodeTextColor':'#000000','titleColor':'#000000','lineColor':'#000000','edgeLabelBackground':'#ffffff','labelBackground':'#ffffff','clusterBkg':'#ced4da','clusterBorder':'#343a40'}}}%%
+flowchart LR
     %% Graphia — who runs what, and where, in local and remote mode.
     %% Companion to docs/langgraph-topology.mermaid, which draws the StateGraph
     %% itself. This one draws the deployment: the same 24-node graph either runs
@@ -41,7 +41,6 @@ flowchart TB
 
 
     subgraph AWS ["AWS us-east-1"]
-        direction TB
         subgraph TFM ["Provisioned by this repo — Terraform, run in a container via ./tf"]
             direction TB
             ECR[("<b><span style='font-size:17px'>ECR</span></b><br/><i>runtime image, tagged with the git commit</i>")]:::aws
@@ -62,8 +61,8 @@ flowchart TB
             direction TB
             NPRO(["<b><span style='font-size:17px'>amazon.nova-pro-v1:0</span></b><br/><i>gameplay tier — get_large()</i>"]):::weights
             NLIT(["<b><span style='font-size:17px'>amazon.nova-lite-v1:0</span></b><br/><i>mechanical tier — get_small()</i>"]):::weights
-            CLDM(["<b><span style='font-size:17px'>claude-haiku-4-5</span></b><br/><i>us.anthropic.claude-haiku-4-5-20251001-v1:0<br/>BOTH tiers use this ONE model (ADR 012)</i>"]):::weights
-            TTN(["<b><span style='font-size:17px'>amazon.titan-embed-text-v2:0</span></b><br/><i>semantic persona metric (spec 033).<br/>ALWAYS Bedrock — never routed through<br/>GRAPHIA_LLM_PROVIDER</i>"]):::weights
+            CLDM(["<b><span style='font-size:17px'>claude-haiku-4-5</span></b><br/><i>us.anthropic.claude-haiku-4-5-20251001-v1:0<br/>BOTH tiers, one model (ADR 012)</i>"]):::weights
+            TTN(["<b><span style='font-size:17px'>amazon.titan-embed-text-v2:0</span></b><br/><i>persona metric (spec 033) — ALWAYS<br/>Bedrock, never via GRAPHIA_LLM_PROVIDER</i>"]):::weights
         end
     end
 
@@ -118,5 +117,26 @@ flowchart TB
     classDef store fill:#e9ecef,stroke:#000000,stroke-width:2px,color:#000000
     classDef weights fill:#e5dbff,stroke:#000000,stroke-width:2px,color:#000000
     classDef ops fill:#ffdeeb,stroke:#000000,stroke-width:2px,color:#000000
+
+    %% Layout hints, not relationships: invisible links put the Bedrock box to
+    %% the right of the Terraform box. Mermaid IGNORES a subgraph's own
+    %% `direction` once edges cross its boundary (LR and RL produce byte-
+    %% identical output here), so rank hints are the only lever. All four
+    %% models take the same hint and none link to each other, which keeps them
+    %% on one rank - vertical under `flowchart LR`.
+    LT ~~~ NPRO
+    LT ~~~ NLIT
+    LT ~~~ CLDM
+    LT ~~~ TTN
+
+    %% Nested clusters get a darker background than the one enclosing them, so
+    %% the nesting is visible: outer #ced4da, second level #9aa3ab, third
+    %% #7c858d. Measured steps 1.71:1 and 1.47:1 between levels, page to outer
+    %% 1.49:1, and black title text never below 5.6:1.
+    style LOCALM fill:#9aa3ab,stroke:#343a40,stroke-width:2px
+    style REMOTEM fill:#9aa3ab,stroke:#343a40,stroke-width:2px
+    style TFM fill:#9aa3ab,stroke:#343a40,stroke-width:2px
+    style BR fill:#9aa3ab,stroke:#343a40,stroke-width:2px
+    style OLLAMA fill:#7c858d,stroke:#343a40,stroke-width:2px
 
     linkStyle default stroke:#000000,stroke-width:2px
