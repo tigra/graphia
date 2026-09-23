@@ -18,7 +18,7 @@ flowchart TB
 
         subgraph LOCALM ["LOCAL MODE — make play — the graph runs in this process"]
             direction TB
-            LG["<b><span style='font-size:17px'>StateGraph, in-process</span></b><br/><i>the 24 nodes — see<br/>docs/langgraph-topology.mermaid</i>"]:::app
+            LG["<b><span style='font-size:17px'>StateGraph, in-process</span></b><br/><i>the 24 nodes — see<br/>docs/langgraph-topology.mermaid.<br/>Bedrock is reached from HERE, through<br/>langchain-aws ChatBedrockConverse —<br/>schemas stay FLAT, Converse rejects<br/>discriminated unions</i>"]:::app
             CK[("<b><span style='font-size:17px'>SqliteSaver</span></b><br/><i>.graphia/checkpoints/&lt;thread_id&gt;.sqlite<br/>one fresh thread per run; no save/load</i>")]:::store
             DIA["<b><span style='font-size:17px'>InProcessDiaryStore</span></b><br/><i>diaries stay in GameState —<br/>nothing leaves the machine</i>"]:::store
             CAR[("<b><span style='font-size:17px'>LocalFileStatsStore</span></b><br/><i>.graphia/career.json</i>")]:::store
@@ -26,8 +26,8 @@ flowchart TB
             subgraph OLLAMA ["Ollama — reachable ONLY from local mode"]
                 direction TB
                 OLL["<b><span style='font-size:17px'>ollama serve</span></b><br/><i>localhost:11434 — native API under a<br/>JSON-schema grammar (ADR 013), not the<br/>Anthropic-compatible endpoint</i>"]:::model
-                OLRG[("<b><span style='font-size:17px'>qwen3-coder:30b</span></b><br/><i>gameplay tier — get_large()<br/>GRAPHIA_OLLAMA_LARGE_MODEL</i>")]:::weights
-                OSML[("<b><span style='font-size:17px'>qwen2.5:3b</span></b><br/><i>mechanical tier — get_small()<br/>GRAPHIA_OLLAMA_SMALL_MODEL</i>")]:::weights
+                OLRG(["<b><span style='font-size:17px'>qwen3-coder:30b</span></b><br/><i>gameplay tier — get_large()<br/>GRAPHIA_OLLAMA_LARGE_MODEL</i>"]):::weights
+                OSML(["<b><span style='font-size:17px'>qwen2.5:3b</span></b><br/><i>mechanical tier — get_small()<br/>GRAPHIA_OLLAMA_SMALL_MODEL</i>"]):::weights
             end
         end
 
@@ -38,18 +38,17 @@ flowchart TB
         end
     end
 
-    subgraph BR ["Amazon Bedrock, us-east-1 — reachable from BOTH modes"]
+    subgraph BR ["Amazon Bedrock, us-east-1 — managed inference, reached from BOTH modes"]
         direction TB
-        BRT["<b><span style='font-size:17px'>ChatBedrockConverse</span></b><br/><i>langchain-aws over the Bedrock Converse<br/>API. Pydantic schemas stay FLAT here —<br/>Converse rejects discriminated unions</i>"]:::model
-        NPRO[("<b><span style='font-size:17px'>amazon.nova-pro-v1:0</span></b><br/><i>gameplay tier — get_large()</i>")]:::weights
-        NLIT[("<b><span style='font-size:17px'>amazon.nova-lite-v1:0</span></b><br/><i>mechanical tier — get_small()</i>")]:::weights
-        CLDM[("<b><span style='font-size:17px'>claude-haiku-4-5</span></b><br/><i>us.anthropic.claude-haiku-4-5-20251001-v1:0<br/>a us. system inference profile (ADR 012).<br/>BOTH tiers resolve to this ONE model —<br/>unlike Nova and Ollama, which split them</i>")]:::weights
+        NPRO(["<b><span style='font-size:17px'>amazon.nova-pro-v1:0</span></b><br/><i>gameplay tier — get_large()</i>"]):::weights
+        NLIT(["<b><span style='font-size:17px'>amazon.nova-lite-v1:0</span></b><br/><i>mechanical tier — get_small()</i>"]):::weights
+        CLDM(["<b><span style='font-size:17px'>claude-haiku-4-5</span></b><br/><i>us.anthropic.claude-haiku-4-5-20251001-v1:0<br/>BOTH tiers use this ONE model (ADR 012)</i>"]):::weights
     end
 
     subgraph AWS ["AWS us-east-1 — provisioned by Terraform, run in a container via ./tf"]
         direction TB
         ECR[("<b><span style='font-size:17px'>ECR</span></b><br/><i>runtime image, tagged with the git commit</i>")]:::aws
-        RT["<b><span style='font-size:17px'>AgentCore Runtime</span></b><br/><i>graphia_demo_runtime — scale-to-zero.<br/>Runs the SAME StateGraph from the SAME<br/>source, in a container.<br/>Its role ALWAYS allows amazon.nova-*;<br/>the Claude profile ARNs are added only<br/>when llm_provider=bedrock-claude</i>"]:::aws
+        RT["<b><span style='font-size:17px'>AgentCore Runtime</span></b><br/><i>graphia_demo_runtime — scale-to-zero.<br/>Runs the SAME StateGraph from the SAME<br/>source, in a container, with its own<br/>ChatBedrockConverse.<br/>Its role ALWAYS allows amazon.nova-*;<br/>the Claude profile ARNs are added only<br/>when llm_provider=bedrock-claude</i>"]:::aws
         GW["<b><span style='font-size:17px'>AgentCore Gateway (MCP)</span></b><br/><i>two targets: diary_write, diary_read.<br/>The agent sees an MCP server; Gateway<br/>does the IAM and the fan-out</i>"]:::aws
         LW["<b><span style='font-size:17px'>Lambda diary_write</span></b>"]:::aws
         LR["<b><span style='font-size:17px'>Lambda diary_read</span></b>"]:::aws
@@ -78,17 +77,16 @@ flowchart TB
     LG -- "provider=ollama" --> OLL
     OLL -- "under ollama" --> OLRG
     OLL -- "under ollama" --> OSML
-    LG -- "provider=bedrock (default)" --> BRT
-    LG -- "provider=bedrock-claude" --> BRT
+    LG -- "provider=bedrock (default)" --> NPRO
+    LG -- "provider=bedrock (default)" --> NLIT
+    LG -- "provider=bedrock-claude" --> CLDM
     CLI -- "HTTPS InvokeAgentRuntime" --> RT
     TUI -- "career read at launch" --> CES
     CES --> LT
     ECR -. "image pinned by tag" .-> RT
-    RT -- "llm_provider=bedrock —<br/>the Terraform DEFAULT" --> BRT
-    RT -- "llm_provider=bedrock-claude —<br/>pinned in .env, or a redeploy<br/>reverts the live Runtime to Nova" --> BRT
-    BRT -- "under bedrock" --> NPRO
-    BRT -- "under bedrock" --> NLIT
-    BRT -- "under bedrock-claude" --> CLDM
+    RT -- "llm_provider=bedrock —<br/>the Terraform DEFAULT" --> NPRO
+    RT -- "llm_provider=bedrock —<br/>the Terraform DEFAULT" --> NLIT
+    RT -- "llm_provider=bedrock-claude —<br/>pinned in .env, or a redeploy<br/>reverts the live Runtime to Nova" --> CLDM
     RT -- "diary tools over MCP" --> GW
     GW --> LW
     GW --> LR
