@@ -106,7 +106,7 @@ help:
 	@echo "Inspection:"
 	@echo "  make inspect-diary      Pretty-print diary entries from the deployed Memory (uses .env)."
 	@echo "  make view-ledger        Browse the eval quality ledger (evals/blunder-ledger.yaml) as a scrollable table. ARGS=\"--path <file>\"."
-	@echo "  make screenshots        Regenerate the README's ledger-viewer SVG screenshots in docs/ (no model/AWS). ARGS=\"--row N --game N --search TEXT\"."
+	@echo "  make screenshots        Regenerate the README's SVG screenshots in docs/: the game (a replay of a preserved transcript) and the ledger viewer. No model/AWS. ARGS=\"--row N --game N --search TEXT\" (ledger viewer)."
 	@echo "  make clean-transcripts  Drop the UNTRACKED run dirs under evals/transcripts/ (the smoke runs); committed runs are kept."
 	@echo ""
 	@echo "Live AI-quality evals (reach a REAL model — NOT the mocked suite; run deliberately):"
@@ -452,12 +452,14 @@ inspect-diary:
 view-ledger:
 	uv run python -m graphia.ui.ledger_viewer $(ARGS)
 
-# Regenerate the README's ledger-viewer screenshots (docs/ledger-viewer-*.svg) by
-# driving the viewer headlessly. Defaults to the newest run with preserved
-# transcripts; no model/AWS needed:
+# Regenerate the README's screenshots headlessly; no model/AWS needed.
+# docs/screenshot.svg replays a committed eval transcript into the real game UI;
+# docs/ledger-viewer-*.svg drive the ledger viewer, defaulting to the newest run
+# with preserved transcripts (ARGS go to the ledger-viewer shots):
 #   make screenshots
 #   make screenshots ARGS="--row 53 --game 5 --search executed"
 screenshots:
+	uv run python -m graphia.tools.game_screenshot
 	uv run python -m graphia.tools.ledger_screenshots $(ARGS)
 
 # Spec-017 transcript cleanup: drop the UNTRACKED (uncommitted) run dirs under

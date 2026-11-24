@@ -2,11 +2,13 @@
 
 A single-player, console **Mafia** game that doubles as a hands-on reference implementation of advanced **LangGraph** orchestration and **AWS Bedrock AgentCore** deployment patterns — multi-agent state graphs, private per-agent state, human-in-the-loop interrupts, async streaming to a terminal UI, and an optional hosted runtime on AgentCore (Runtime + Gateway + Memory + Observability).
 
-You play one human among six AI townsfolk. Some are Mafia. Survive the nights, argue through the days, and vote to execute the people you suspect — or get executed first.
+You play one human among seven AI townsfolk (by default; the lineup is configurable). Two of the eight are Mafia — maybe you. Survive the nights, argue through the days, and vote to execute the people you suspect — or get executed first.
 
 > **Why it exists:** most multi-agent examples are toy tasks with no real deployment story. Graphia is a genuinely playable game whose source makes each advanced LangGraph and AgentCore concept easy to locate, run, and lift into a real project — both locally and against a hosted cloud runtime.
 
-![Graphia running in the terminal — Night phase, the human (a Mafioso) choosing a target from the pointing modal](docs/screenshot.png)
+![Graphia running in the terminal: you are Kenji, a Mafioso. After a Day of accusations the town has called a vote on Soren, your secret partner, and now it's your ballot](docs/screenshot.svg)
+
+<sub>The dialogue is a real game (Claude Haiku 4.5) from the committed eval transcripts, replayed into the real UI from a Mafioso's seat by `make screenshots`.</sub>
 
 ---
 
