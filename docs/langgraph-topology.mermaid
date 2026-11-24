@@ -69,7 +69,7 @@ flowchart TB
         RR --> FN["<b><span style='font-size:17px'>first_night_mafia_intros</span></b><br/><i>cycle == 1 only;<br/>private to each Mafia</i>"]:::node
         FN --> NO["<b><span style='font-size:17px'>night_open</span></b><br/><i>'Night falls';<br/>cycle++ on re-entry from Day</i>"]:::node
 
-        NO --> RNO{{"<b><span style='font-size:17px'>route_after_night_open</span></b><br/>cycle > max_days (default 12)<br/>→ draw (spec 023)"}}:::router
+        NO --> RNO{{"<b><span style='font-size:17px'>route_after_night_open</span></b><br/>cycle ≥ max_days (default 12)<br/>→ draw (spec 023)"}}:::router
         RNO -- "runaway → draw" --> ES["<b><span style='font-size:17px'>end_screen</span></b><br/><i>winner line +<br/>kill_log + roster reveal</i>"]:::node
         RNO -- "else" --> MRS["<b><span style='font-size:17px'>mafia_round_start</span></b><br/><i>shuffle the pointing order;<br/>opens one consensus round<br/>(spec 015)</i>"]:::node
 
@@ -131,7 +131,7 @@ flowchart TB
     IR -. "{messages: [SystemMessage]}" .-> SM
     RR -. "{messages: [private SystemMessage]}" .-> SM
     NO -. "phase=night, cycle, night_picks={}" .-> SPH
-    NO -. "winner=draw (past max_days)" .-> SW
+    NO -. "winner=draw (cycle ≥ max_days)" .-> SW
     MRS -. "night_mafia_order, night_round" .-> SNP
     MPT -. "night_picks, night_round_picks,<br/>night_pointer_index" .-> SNP
     RNK -. "players[victim].is_alive=False" .-> SP

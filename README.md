@@ -212,13 +212,13 @@ flowchart LR
     DRV -->|"--remote"| RT
 ```
 
-- **Graph topology** lives in `src/graphia/graph.py`; nodes are grouped by phase under `src/graphia/nodes/`.
+- **Graph topology** lives in `src/graphia/graph.py`; nodes are grouped by phase under `src/graphia/nodes/`. Two diagrams show it: [`docs/langgraph-topology.generated.md`](docs/langgraph-topology.generated.md) is generated from the compiled graph by `make graph-diagram`, so it always matches the code; [`docs/langgraph-topology.mermaid`](docs/langgraph-topology.mermaid) is hand-maintained and adds what each node does, the state it writes and which model each node calls.
 - **State** is one `GameState` `TypedDict` with reducers (`src/graphia/state.py`); "private" messages are a convention carried in message metadata and filtered by the UI.
 - **The driver** (`src/graphia/driver.py`) iterates the synchronous graph stream inside a worker thread so it never blocks Textual's event loop, and pumps one resume value per super-step.
 
-**For the detailed, current diagrams** (kept up to date in the per-increment tutorials):
+**More diagrams, from the per-increment tutorials** (each shows the system as of that increment):
 
-- **Full compiled-graph topology** — every phase, node, and conditional edge of the game loop: [Tutorial 001 → Diagram](context/tutorials/001-playable-skeleton/tutorial.md#diagram).
+- **The first playable game loop** — phases, nodes and conditional edges as of increment 001: [Tutorial 001 → Diagram](context/tutorials/001-playable-skeleton/tutorial.md#diagram).
 - **Hosted AgentCore deployment topology** — Client → Runtime → Gateway → Lambda → Memory, end to end: [Tutorial 002 → Diagram](context/tutorials/002-hosted-agentcore-deployment/tutorial.md#diagram).
 - **The `/vote` re-prompt control flow** — single-interrupt-per-node loop: [Tutorial 004 → Diagram](context/tutorials/004-robust-vote-input-validation/tutorial.md#diagram).
 

@@ -68,7 +68,7 @@ LAMBDA_ZIPS   = $(addprefix $(LAMBDA_BUILD)/,$(addsuffix .zip,$(LAMBDA_FNS)))
         wire-env deploy redeploy deploy-stats destroy inspect-diary play play-remote \
         build-lambdas clean-lambdas enable-transaction-search verify-observability \
         create-stats-strategy eval-dialogue repetition-experiment ollama-smoke \
-        blunder-eval view-ledger screenshots clean-transcripts show-trace
+        blunder-eval view-ledger screenshots graph-diagram clean-transcripts show-trace
 
 help:
 	@echo "Container image targets:"
@@ -107,6 +107,7 @@ help:
 	@echo "  make inspect-diary      Pretty-print diary entries from the deployed Memory (uses .env)."
 	@echo "  make view-ledger        Browse the eval quality ledger (evals/blunder-ledger.yaml) as a scrollable table. ARGS=\"--path <file>\"."
 	@echo "  make screenshots        Regenerate the README's SVG screenshots in docs/: the game (a replay of a preserved transcript) and the ledger viewer. No model/AWS. ARGS=\"--row N --game N --search TEXT\" (ledger viewer)."
+	@echo "  make graph-diagram      Regenerate docs/langgraph-topology.generated.md (Mermaid) from the compiled game graph. No model/AWS."
 	@echo "  make clean-transcripts  Drop the UNTRACKED run dirs under evals/transcripts/ (the smoke runs); committed runs are kept."
 	@echo ""
 	@echo "Live AI-quality evals (reach a REAL model — NOT the mocked suite; run deliberately):"
@@ -462,6 +463,12 @@ view-ledger:
 screenshots:
 	uv run python -m graphia.tools.game_screenshot
 	uv run python -m graphia.tools.ledger_screenshots $(ARGS)
+
+# Regenerate docs/langgraph-topology.generated.md: LangGraph's own Mermaid rendering of the
+# compiled game graph, so it cannot drift from graph.py. No model/AWS needed.
+# The hand-maintained companion with node details is docs/langgraph-topology.mermaid.
+graph-diagram:
+	uv run python -m graphia.tools.graph_diagram
 
 # Spec-017 transcript cleanup: drop the UNTRACKED (uncommitted) run dirs under
 # evals/transcripts/ — the few-game smoke runs — while leaving any run a
