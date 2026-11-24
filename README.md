@@ -165,6 +165,22 @@ Beyond the mocked unit suite, several `make` targets exercise the *actual* AI be
 
 These reach a real model (so they're non-deterministic) and live **outside** `pytest`. The Bedrock path costs tokens; `make blunder-eval` also runs against a local Ollama server (zero cloud cost). Use `eval-dialogue` / `repetition-experiment` to A/B any change to AI dialogue — run on `HEAD`, then on a pre-change checkout, and compare — and `blunder-eval` to build up the committed quality ledger over time.
 
+#### The ledger viewer (`make view-ledger`)
+
+Every measured run, side by side: the provider and models, win rates by side, vote activity, and more columns to the right. Runs flagged ⚠ were measured on a dirty working tree.
+
+![Ledger viewer: the runs table, with provider, models, games, win rates and vote activity per run](docs/ledger-viewer-table.svg)
+
+`Enter` opens a run's full record, including its git commit, model digests and settings. `t` moves to its games: one row per preserved game, showing how many days it lasted and its outcome as surviving Law-abiding–Mafia (L-M).
+
+![Ledger viewer: one run's record with its per-game outcome list](docs/ledger-viewer-run.svg)
+
+`Enter` on a game opens its syntax-highlighted transcript. Each AI's private `<thought>`s sit beside the public speech and the Moderator's `<recap>`s, and `/` searches the game (here for `status`, stepping through the recaps with `n` / `N`).
+
+![Ledger viewer: a game transcript with private thoughts, speech and Moderator recaps, search matches highlighted](docs/ledger-viewer-transcript.svg)
+
+These screenshots are generated, not hand-captured. `make screenshots` drives the viewer headlessly through Textual's test pilot and rewrites `docs/ledger-viewer-*.svg` from the newest run that has preserved transcripts. Use `ARGS="--row N --game N --search TEXT"` to pick a different run, game or search.
+
 ---
 
 ## How it works

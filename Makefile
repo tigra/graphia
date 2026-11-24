@@ -68,7 +68,7 @@ LAMBDA_ZIPS   = $(addprefix $(LAMBDA_BUILD)/,$(addsuffix .zip,$(LAMBDA_FNS)))
         wire-env deploy redeploy deploy-stats destroy inspect-diary play play-remote \
         build-lambdas clean-lambdas enable-transaction-search verify-observability \
         create-stats-strategy eval-dialogue repetition-experiment ollama-smoke \
-        blunder-eval view-ledger clean-transcripts
+        blunder-eval view-ledger screenshots clean-transcripts
 
 help:
 	@echo "Container image targets:"
@@ -106,6 +106,7 @@ help:
 	@echo "Inspection:"
 	@echo "  make inspect-diary      Pretty-print diary entries from the deployed Memory (uses .env)."
 	@echo "  make view-ledger        Browse the eval quality ledger (evals/blunder-ledger.yaml) as a scrollable table. ARGS=\"--path <file>\"."
+	@echo "  make screenshots        Regenerate the README's ledger-viewer SVG screenshots in docs/ (no model/AWS). ARGS=\"--row N --game N --search TEXT\"."
 	@echo "  make clean-transcripts  Drop the UNTRACKED run dirs under evals/transcripts/ (the smoke runs); committed runs are kept."
 	@echo ""
 	@echo "Live AI-quality evals (reach a REAL model — NOT the mocked suite; run deliberately):"
@@ -450,6 +451,14 @@ inspect-diary:
 #   make view-ledger ARGS="--path /tmp/some-ledger.yaml"
 view-ledger:
 	uv run python -m graphia.ui.ledger_viewer $(ARGS)
+
+# Regenerate the README's ledger-viewer screenshots (docs/ledger-viewer-*.svg) by
+# driving the viewer headlessly. Defaults to the newest run with preserved
+# transcripts; no model/AWS needed:
+#   make screenshots
+#   make screenshots ARGS="--row 53 --game 5 --search executed"
+screenshots:
+	uv run python -m graphia.tools.ledger_screenshots $(ARGS)
 
 # Spec-017 transcript cleanup: drop the UNTRACKED (uncommitted) run dirs under
 # evals/transcripts/ — the few-game smoke runs — while leaving any run a
