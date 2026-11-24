@@ -68,7 +68,7 @@ LAMBDA_ZIPS   = $(addprefix $(LAMBDA_BUILD)/,$(addsuffix .zip,$(LAMBDA_FNS)))
         wire-env deploy redeploy deploy-stats destroy inspect-diary play play-remote \
         build-lambdas clean-lambdas enable-transaction-search verify-observability \
         create-stats-strategy eval-dialogue repetition-experiment ollama-smoke \
-        blunder-eval view-ledger screenshots graph-diagram clean-transcripts show-trace
+        blunder-eval view-ledger screenshots graph-diagram diagrams clean-transcripts show-trace
 
 help:
 	@echo "Container image targets:"
@@ -108,6 +108,7 @@ help:
 	@echo "  make view-ledger        Browse the eval quality ledger (evals/blunder-ledger.yaml) as a scrollable table. ARGS=\"--path <file>\"."
 	@echo "  make screenshots        Regenerate the README's SVG screenshots in docs/: the game (a replay of a preserved transcript) and the ledger viewer. No model/AWS. ARGS=\"--row N --game N --search TEXT\" (ledger viewer)."
 	@echo "  make graph-diagram      Regenerate docs/langgraph-topology.generated.md (Mermaid) from the compiled game graph. No model/AWS."
+	@echo "  make diagrams           Render every docs/*.mermaid (and the generated topology) to an .svg beside it, via mermaid-cli (npx)."
 	@echo "  make clean-transcripts  Drop the UNTRACKED run dirs under evals/transcripts/ (the smoke runs); committed runs are kept."
 	@echo ""
 	@echo "Live AI-quality evals (reach a REAL model — NOT the mocked suite; run deliberately):"
@@ -469,6 +470,23 @@ screenshots:
 # The hand-maintained companion with node details is docs/langgraph-topology.mermaid.
 graph-diagram:
 	uv run python -m graphia.tools.graph_diagram
+
+# Render the Mermaid diagrams to static SVGs: docs/<name>.svg beside each
+# docs/<name>.mermaid, plus docs/langgraph-topology.generated.svg from the
+# generated Markdown. A static SVG looks the same on GitHub, in a dark-mode IDE
+# and in a plain browser, with no Mermaid renderer or viewer theme in the way.
+# Uses the official mermaid-cli through npx, pinned; the first run downloads it
+# and a headless Chromium. Regenerates the generated topology first.
+MERMAID_CLI ?= npx -y @mermaid-js/mermaid-cli@11.4.2
+DIAGRAM_SOURCES := $(wildcard docs/*.mermaid)
+diagrams: graph-diagram
+	@for f in $(DIAGRAM_SOURCES); do \
+		echo "  $$f -> $${f%.mermaid}.svg"; \
+		$(MERMAID_CLI) -q -b white -i "$$f" -o "$${f%.mermaid}.svg" || exit 1; \
+	done
+	@echo "  docs/langgraph-topology.generated.md -> docs/langgraph-topology.generated.svg"
+	@awk '/^```mermaid$$/ {on=1; next} /^```$$/ {on=0} on' docs/langgraph-topology.generated.md \
+		| $(MERMAID_CLI) -q -b white -i - -o docs/langgraph-topology.generated.svg
 
 # Spec-017 transcript cleanup: drop the UNTRACKED (uncommitted) run dirs under
 # evals/transcripts/ — the few-game smoke runs — while leaving any run a

@@ -212,7 +212,8 @@ flowchart LR
     DRV -->|"--remote"| RT
 ```
 
-- **Graph topology** lives in `src/graphia/graph.py`; nodes are grouped by phase under `src/graphia/nodes/`. Two diagrams show it: [`docs/langgraph-topology.generated.md`](docs/langgraph-topology.generated.md) is generated from the compiled graph by `make graph-diagram`, so it always matches the code; [`docs/langgraph-topology.mermaid`](docs/langgraph-topology.mermaid) is hand-maintained and adds what each node does, the state it writes and which model each node calls.
+- **Graph topology** lives in `src/graphia/graph.py`; nodes are grouped by phase under `src/graphia/nodes/`. Two diagrams show it: [`docs/langgraph-topology.generated.md`](docs/langgraph-topology.generated.md) [[svg]](docs/langgraph-topology.generated.svg) is generated from the compiled graph by `make graph-diagram`, so it always matches the code; [`docs/langgraph-topology.mermaid`](docs/langgraph-topology.mermaid) [[svg]](docs/langgraph-topology.svg) is hand-maintained and adds what each node does, the state it writes and which model each node calls.
+- **Deployment** — who runs what, and where, in local and remote mode: [`docs/deployment-modes.mermaid`](docs/deployment-modes.mermaid) [[svg]](docs/deployment-modes.svg). `make diagrams` re-renders every `[svg]` from its Mermaid source.
 - **State** is one `GameState` `TypedDict` with reducers (`src/graphia/state.py`); "private" messages are a convention carried in message metadata and filtered by the UI.
 - **The driver** (`src/graphia/driver.py`) iterates the synchronous graph stream inside a worker thread so it never blocks Textual's event loop, and pumps one resume value per super-step.
 
